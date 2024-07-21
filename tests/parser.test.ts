@@ -1,5 +1,5 @@
 import { beforeEach, describe, it, expect } from 'vitest';
-import { SaxaMLLEmitter, SaxaMLLParser, ParserState } from "../src/index";
+import { SaxaMLLEmitter, SaxaMLLParser, ParserState, SaxaMLLGenerator } from "../src";
 import { getText } from '../src/utils';
 
 describe('SaxaMLL - Utils', () => {
@@ -189,7 +189,7 @@ describe('SaxaMLL - Core', () => {
         parser.parse("<tweet>Hello<question>");
         expect(parser.state).toEqual(ParserState.OPEN);
     })
-    it('', () => {
+    it('should be in an OPEN state if all the tags have not been closed', () => {
         parser.parse('<tweet>Hello <question></question>');
         expect(parser.state).toEqual(ParserState.OPEN);
     })
@@ -322,7 +322,13 @@ describe('SaxaMLL - Events', () => {
         const emitter = new SaxaMLLEmitter();
     })
 
-    it('should emit an event when a tag is opened', () => {
+    it('should emit an event when a tag is opened', () => { })
+})
 
+describe('SaxaMLL - Prompt generator', () => {
+    beforeEach(() => {
+        const generator = new SaxaMLLGenerator();
     })
+
+    it('should generate a prompt from an XML description', () => { });
 })

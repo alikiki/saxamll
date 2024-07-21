@@ -3,8 +3,8 @@
 `saxaMLL` is a event-driven incremental SAX parser for your LLM interaction needs.
 
 ## Features
-- No frills: pure text-to-text parsing.
-- Ships with a prompt generator for your custom XML tags.
+- No frills: pure text-to-text parsing
+- Prompt generator for your custom XML tags
 
 ## Get started
 

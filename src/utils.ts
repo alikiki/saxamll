@@ -1,4 +1,4 @@
-import { XMLNode } from ".";
+import { XMLNode } from "./types/index";
 
 function getText(node: XMLNode): string {
     if (node.tag === "text") {
@@ -13,4 +13,4 @@ function getText(node: XMLNode): string {
     return textCollector;
 }
 
-export { getText }
+export { getText };

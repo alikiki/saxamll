@@ -1,0 +1,3 @@
+class SaxaMLLGenerator { }
+
+export { SaxaMLLGenerator };
