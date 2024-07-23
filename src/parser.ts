@@ -1,5 +1,6 @@
 import { EventEmitter } from "eventemitter3";
 import { XMLNode } from "./types/index";
+import { XMLNodeDescription } from "./description";
 /**
  * Parser for an XML-like DSL that Claude is prompted to use.
  * 
@@ -271,38 +272,37 @@ class SaxaMLLParser {
     }
 }
 
+type SaxaMLLEventType = "tagOpen" | "tagClose";
+type SaxaMLLEventCallback = (node: XMLNode) => void;
+
 class SaxaMLLEmitter extends EventEmitter {
-    responses: string[];
     constructor() {
         super();
-        this.responses = [];
     }
 
-    onTagOpen(tagName: string, callback: (node: XMLNode) => Promise<string>) {
-        const modifiedTagName = `tagOpen:${tagName}`;
-        this.on(modifiedTagName, async (node: XMLNode) => {
-            const response = await callback(node);
-            this.responses.push(response);
-
-            console.log(this.responses);
-        });
+    addHandler(event: SaxaMLLEventType, tag: XMLNodeDescription | string, callback: SaxaMLLEventCallback) {
+        const tagName = tag instanceof XMLNodeDescription ? tag.tag : tag;
+        super.on(`${event}:${tagName}`, callback);
     }
 
-    onTagClose(tagName: string, callback: (node: XMLNode) => Promise<string>) {
-        const modifiedTagName = `tagClose:${tagName}`;
-        this.on(modifiedTagName, async (node: XMLNode) => {
-            const response = await callback(node);
-            this.responses.push(response);
-
-            console.log(this.responses);
-        });
+    onTagOpen(tag: XMLNodeDescription | string, callback: SaxaMLLEventCallback) {
+        const tagName = tag instanceof XMLNodeDescription ? tag.tag : tag;
+        super.on(`tagOpen:${tagName}`, callback);
     }
 
-    flush(): string[] {
-        const responses = this.responses;
-        const cleanedResponses = responses.filter((response) => response !== "");
-        this.responses = [];
-        return cleanedResponses;
+    onTagClose(tag: XMLNodeDescription | string, callback: SaxaMLLEventCallback) {
+        const tagName = tag instanceof XMLNodeDescription ? tag.tag : tag;
+        super.on(`tagClose:${tagName}`, callback);
+    }
+
+    removeHandler(eventType: SaxaMLLEventType, tag: XMLNodeDescription | string): void {
+        const tagName = tag instanceof XMLNodeDescription ? tag.tag : tag;
+        super.removeAllListeners(`${eventType}:${tagName}`);
+    }
+
+    processEvent(eventType: SaxaMLLEventType, tagName: XMLNodeDescription | string, node: XMLNode) {
+        const eventName = `${eventType}:${tagName}`;
+        super.emit(eventName, node);
     }
 }
 

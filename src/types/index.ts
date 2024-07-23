@@ -4,3 +4,8 @@ export interface XMLNode {
     children: XMLNode[];
     content?: string;
 }
+
+export interface XMLNodeDescriptionExample {
+    input: string,
+    output: string
+}

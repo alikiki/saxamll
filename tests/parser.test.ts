@@ -1,6 +1,43 @@
 import { beforeEach, describe, it, expect } from 'vitest';
-import { SaxaMLLEmitter, SaxaMLLParser, ParserState, SaxaMLLGenerator } from "../src";
+import { SaxaMLLEmitter, SaxaMLLParser, ParserState, XMLNodeDescription } from "../src";
 import { getText } from '../src/utils';
+import { XMLNode } from '../src/types';
+
+describe('SaxaMLL - XMLNodeDescription', () => {
+    it('generates a prompt from an XML AST with no attributes', () => {
+        const classification = new XMLNodeDescription({
+            tag: 'classification',
+            description: 'classification of the text inside the <sentence> tag as `positive` or `negative`.',
+            attributes: {}
+        });
+
+        const prompt = classification.getPrompt();
+        expect(prompt).toEqual('<classification></classification>: classification of the text inside the <sentence> tag as `positive` or `negative`.\n');
+    })
+
+    it('generates a prompt from an XML AST with attributes', () => { })
+    it('generates a prompt from an XML AST with examples', () => {
+        const classification = new XMLNodeDescription({
+            tag: 'classification',
+            description: 'classification of the text inside the <sentence> tag as `positive` or `negative`.',
+            attributes: {}
+        });
+
+        classification.setExamples([
+            {
+                input: "<sentence>It was a good day.</sentence>",
+                output: "positive"
+            },
+            {
+                input: "<sentence>It was a bad day.</sentence>",
+                output: "negative"
+            }
+        ]);
+
+        const prompt = classification.getPrompt();
+        expect(prompt).toEqual('<classification></classification>: classification of the text inside the <sentence> tag as `positive` or `negative`.\n<example><input>"<sentence>It was a good day.</sentence>"</input><output>"positive"</output></example><example><input>"<sentence>It was a bad day.</sentence>"</input><output>"negative"</output></example>');
+    })
+})
 
 describe('SaxaMLL - Utils', () => {
     it('gets text from a text node', () => {
@@ -318,17 +355,77 @@ describe('SaxaMLL - Core', () => {
 })
 
 describe('SaxaMLL - Events', () => {
-    beforeEach(() => {
+    it('should emit an event when a tag is opened', () => {
         const emitter = new SaxaMLLEmitter();
-    })
 
-    it('should emit an event when a tag is opened', () => { })
+        let response = "";
+        emitter.addHandler('tagOpen', 'tweet', async (node: XMLNode) => {
+            response = node.tag;
+        })
+        emitter.processEvent('tagOpen', 'tweet', {
+            tag: "tweet",
+            attributes: {},
+            children: [],
+            content: ""
+        });
+
+        expect(response).toBe("tweet");
+    })
+    it('should emit an event when a tag is closed', () => {
+        const emitter = new SaxaMLLEmitter();
+
+        let response = "";
+        emitter.addHandler('tagClose', 'tweet', async (node: XMLNode) => {
+            response = node.tag;
+        })
+        emitter.processEvent('tagClose', 'tweet', {
+            tag: "tweet",
+            attributes: {},
+            children: [],
+            content: ""
+        });
+
+        expect(response).toBe("tweet");
+    })
+    it('should do nothing after handler has been removed', () => {
+        const emitter = new SaxaMLLEmitter();
+
+        let response = "nothing";
+        emitter.addHandler('tagClose', 'tweet', async (node: XMLNode) => {
+            response = node.tag;
+        })
+
+        emitter.removeHandler('tagClose', 'tweet');
+        emitter.processEvent('tagClose', 'tweet', {
+            tag: "tweet",
+            attributes: {},
+            children: [],
+            content: ""
+        });
+
+        expect(response).toBe("nothing");
+    })
 })
 
-describe('SaxaMLL - Prompt generator', () => {
-    beforeEach(() => {
-        const generator = new SaxaMLLGenerator();
-    })
+describe('SaxaMLL - Integration', () => {
+    it('should be read the contents of a single xml tag', () => {
+        const parser = new SaxaMLLParser();
+        let results = "";
+        parser.emitter.addHandler('tagClose', 'tweet', (node: XMLNode) => {
+            results = getText(node);
+        })
 
-    it('should generate a prompt from an XML description', () => { });
+        parser.parse("<tweet>Hello</tweet>");
+        expect(results).toBe("Hello");
+    })
+    it('should be able to interpret attributes on tagOpen', () => {
+        const parser = new SaxaMLLParser();
+        let results = "";
+        parser.emitter.addHandler('tagOpen', 'tweet', (node: XMLNode) => {
+            results = node.attributes.id;
+        })
+
+        parser.parse("<tweet id=\"1\">");
+        expect(results).toBe("1");
+    })
 })

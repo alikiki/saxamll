@@ -1,3 +1,3 @@
 export { SaxaMLLParser, SaxaMLLEmitter, ParserState } from "./parser";
-export { SaxaMLLGenerator } from "./generator";
+export { XMLNodeDescription } from "./description";
 export { getText } from "./utils";
