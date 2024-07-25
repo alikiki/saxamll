@@ -352,6 +352,33 @@ describe('SaxaMLL - Core', () => {
             }]
         })
     })
+
+    it('should be able to parse multiple times', () => {
+        parser.parse("<tweet id=\"1\" name=\"tweet\">");
+        parser.parse("<question q=\"what is life?\"></question>");
+        parser.parse("</tweet>");
+
+        expect(parser.ast).toEqual({
+            tag: "root",
+            attributes: {},
+            children: [{
+                tag: "tweet",
+                attributes: {
+                    id: "1",
+                    name: "tweet"
+                },
+                children: [{
+                    tag: "question",
+                    attributes: {
+                        q: "what is life?"
+                    },
+                    children: [],
+                    content: ""
+                }],
+                content: ""
+            }]
+        })
+    })
 })
 
 describe('SaxaMLL - Events', () => {
@@ -427,5 +454,59 @@ describe('SaxaMLL - Integration', () => {
 
         parser.parse("<tweet id=\"1\">");
         expect(results).toBe("1");
+    })
+    it.skip('', () => {
+        const parser = new SaxaMLLParser();
+        let results = "";
+
+        parser.emitter.addHandler('tagOpen', 'response', (node: XMLNode) => {
+            results += getTextDelta(node);
+        })
+        parser.emitter.addHandler('tagClose', 'toReplaceWithImage', async (node: XMLNode) => {
+            const query = node.attributes.query;
+            const success = node.attributes.onSuccess;
+            const failure = node.attributes.onFailure;
+
+            const response = await fetch();
+            const data = await response.json();
+
+            if (data.results.length > 0) {
+                results += success;
+            } else {
+                results += failure;
+            }
+        })
+
+        parser.parse("<response>Barack Obama is the 44th US president.<toReplaceWithImage onSuccess='Here is a photo of Obama:', onFailure='' query='portrait of obama'><toReplaceWithImage></response>");
+
+        // assuming that the API call is successful
+        expect(results).toBe("Barack Obama is the 44th US president. Here is a photo of Obama:");
+    })
+})
+
+describe('SaxaMLL - Examples', () => {
+    it('should be able to parse the example from simple_classification.ts', () => {
+        const parser = new SaxaMLLParser();
+        const classification = new XMLNodeDescription({
+            tag: "classification",
+            description: "Put 'positive' if the text inside '<sentence></sentence> tags is positive. Put 'negative' if the text is negative"
+        })
+
+        classification.setExamples([
+            {
+                input: "<sentence>I'm eating lobsters and I'm so happy.</sentence>",
+                output: "<classification>positive</classification>"
+            }
+        ])
+
+        console.log(classification.getPrompt());
+
+        let response = "";
+        parser.emitter.addHandler('tagClose', classification, (node: XMLNode) => {
+            response = getText(node);
+        })
+
+        parser.parse("<classification>positive</classification>");
+        expect(response).toBe("positive");
     })
 })
