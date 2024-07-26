@@ -35,7 +35,7 @@ describe('SaxaMLL - XMLNodeDescription', () => {
         ]);
 
         const prompt = classification.getPrompt();
-        expect(prompt).toEqual('<classification></classification>: classification of the text inside the <sentence> tag as `positive` or `negative`.\n<example><input>"<sentence>It was a good day.</sentence>"</input><output>"positive"</output></example><example><input>"<sentence>It was a bad day.</sentence>"</input><output>"negative"</output></example>');
+        expect(prompt).toEqual('<classification></classification>: classification of the text inside the <sentence> tag as `positive` or `negative`.\nExample:\n\tInput: "<sentence>It was a good day.</sentence>"\n\tOutput: "positive"\nExample:\n\tInput: "<sentence>It was a bad day.</sentence>"\n\tOutput: "negative"\n');
     })
 })
 
@@ -353,6 +353,117 @@ describe('SaxaMLL - Core', () => {
         })
     })
 
+    it('should recognize `<` with spaces around it as text', () => {
+        parser.parse("< tweet >");
+        expect(parser.ast).toEqual({
+            tag: "root",
+            attributes: {},
+            children: [{
+                tag: "text",
+                attributes: {},
+                children: [],
+                content: "< tweet >"
+            }]
+        })
+    })
+    it('should be fine with spaces around the `=` sign in attribute key-value pairs', () => {
+        parser.parse("<tweet id = \"1\">");
+        expect(parser.ast).toEqual({
+            tag: "root",
+            attributes: {},
+            children: [{
+                tag: "tweet",
+                attributes: {
+                    id: "1"
+                },
+                children: [],
+                content: ""
+            }]
+        })
+    })
+
+    it('should recogize when a new tag is being opened', () => {
+        parser.parse("<tweet><question>");
+        expect(parser.stack).toEqual([
+            {
+                node: {
+                    tag: "root",
+                    attributes: {},
+                    children: [
+                        {
+                            tag: "tweet",
+                            attributes: {},
+                            children: [{
+                                tag: "question",
+                                attributes: {},
+                                children: [],
+                                content: ""
+                            }],
+                            content: ""
+                        }
+                    ],
+                },
+                state: ParserState.IDLE
+            },
+            {
+                node: {
+                    tag: "tweet",
+                    attributes: {},
+                    children: [{
+                        tag: "question",
+                        attributes: {},
+                        children: [],
+                        content: ""
+                    }],
+                    content: ""
+                },
+                state: ParserState.OPEN
+            },
+            {
+                node: {
+                    tag: "question",
+                    attributes: {},
+                    children: [],
+                    content: ""
+                },
+                state: ParserState.OPEN
+            }
+        ])
+    })
+
+    it('should be in an IDLE state on a lone self-closing tag', () => {
+        parser.parse("<tweet/>");
+        expect(parser.state).toEqual(ParserState.IDLE);
+    })
+
+    it('should be in an OPEN state where there is still an open tag with a lone self-closing tag', () => {
+        parser.parse("<tweet><question/>");
+        expect(parser.state).toEqual(ParserState.OPEN);
+    })
+
+    it('should be in an IDLE state when all tags are closed with a lone self-closing tag', () => {
+        parser.parse("<tweet><question/></tweet>");
+        expect(parser.state).toEqual(ParserState.IDLE);
+    })
+
+    it('should handle self-closing tags', () => {
+        parser.parse("<tweet id=\"1\" name=\"tweet\"/>");
+
+        expect(parser.ast).toEqual({
+            tag: "root",
+            attributes: {},
+            children: [{
+                tag: "tweet",
+                attributes: {
+                    id: "1",
+                    name: "tweet"
+                },
+                children: [],
+                content: ""
+            }]
+        })
+    })
+
     it('should be able to parse multiple times', () => {
         parser.parse("<tweet id=\"1\" name=\"tweet\">");
         parser.parse("<question q=\"what is life?\"></question>");
@@ -508,5 +619,25 @@ describe('SaxaMLL - Examples', () => {
 
         parser.parse("<classification>positive</classification>");
         expect(response).toBe("positive");
+    })
+    it("", () => {
+        const videoSearchTag = new XMLNodeDescription({
+            tag: "videoSearch",
+            selfClosing: true,
+            description: "Search for a video given a keyword. The `query` attribute should contain the keyword"
+        })
+
+        videoSearchTag.setExamples([
+            {
+                input: "Tell me more about lobsters.",
+                output: "<videoSearch query='lobster' />"
+            },
+            {
+                input: "Who was muhammad ali?",
+                output: "<videoSearch query='muhammad ali'/>"
+            },
+        ])
+
+        console.log(videoSearchTag.getPrompt());
     })
 })

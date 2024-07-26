@@ -37,7 +37,7 @@ class XMLNodeDescription {
 
         let examplePrompt = "";
         for (let example of this.examples) {
-            examplePrompt += `<example><input>\"${example.input}\"</input><output>\"${example.output}\"</output></example>`;
+            examplePrompt += `Example:\n\tInput: \"${example.input}\"\n\tOutput: \"${example.output}\"\n`;
         }
 
         return examplePrompt
