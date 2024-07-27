@@ -27,6 +27,32 @@ interface StackNode {
     state: ParserState;
 }
 
+
+
+abstract class SaxaMLLParserState {
+    abstract toIdle(): void;
+    abstract toOpen(): void;
+    abstract toOpenTag(): void;
+    abstract toCloseTag(): void;
+    abstract toTagName(): void;
+    abstract toAttrKey(): void;
+    abstract toAttrValueReady(): void;
+    abstract toAttrValue(): void;
+    abstract toText(): void;
+}
+
+class IdleState extends SaxaMLLParserState {
+    toIdle() { }
+    toOpen() { }
+    toOpenTag() { }
+    toCloseTag() { }
+    toTagName() { }
+    toAttrKey() { }
+    toAttrValueReady() { }
+    toAttrValue() { }
+    toText() { }
+}
+
 class SaxaMLLParser {
     state: ParserState;
     buffer: string;
@@ -76,6 +102,29 @@ class SaxaMLLParser {
         this.emitter = new SaxaMLLEmitter();
     }
 
+    flush() {
+        this.state = ParserState.IDLE;
+        this.buffer = "";
+        this.currIdx = 0;
+        this.currAttrKey = "";
+        this.currAttrValue = "";
+        this.currChildNode = {
+            tag: "",
+            attributes: {},
+            children: [],
+            content: ""
+        };
+        this.ast = {
+            tag: "root",
+            attributes: {},
+            children: []
+        };
+        this.stack = [{
+            node: this.ast,
+            state: ParserState.IDLE
+        }];
+    }
+
     flushCurrChildNode() {
         this.currChildNode = {
             tag: "",
@@ -114,8 +163,9 @@ class SaxaMLLParser {
     }
 
     pushChild() {
-        // TODO: callback or event emitting function
         switch (this.state) {
+            case ParserState.OPENTAG:
+                if ((this.stack[this.stack.length - 1].node.tag === "root") || (this.currChildNode.tag.length === 0)) break;
             case ParserState.TEXT:
                 // Text nodes must have no children.
                 this.stack[this.stack.length - 1].node.children.push(this.currChildNode);
@@ -130,6 +180,8 @@ class SaxaMLLParser {
                 });
                 break;
         }
+
+        console.log(this.stack[this.stack.length - 1].node);
 
         // Emit an event that a opening tag has been parsed
         const modifiedTagName = `tagOpen:${this.currChildNode.tag}`;
@@ -153,6 +205,16 @@ class SaxaMLLParser {
         return this.stack[this.stack.length - 1].state;
     }
 
+    end() {
+        // Push the last child node
+        this.pushChild();
+
+        // Pop until the stack is empty
+        while (this.stack.length > 1) {
+            this.popAndGetState();
+        }
+    }
+
     parse(input: string) {
         this.buffer += input;
         while (this.currIdx < this.buffer.length) {
@@ -160,8 +222,7 @@ class SaxaMLLParser {
                 case "<":
                     switch (this.state) {
                         case ParserState.TEXT:
-                            // Append the text node 
-                            this.pushChild();
+                            // Don't push the child yet - wait for the next character
 
                             // Start a new node
                             this.state = ParserState.OPENTAG;
@@ -179,6 +240,14 @@ class SaxaMLLParser {
                         case ParserState.CLOSETAG:
                             this.state = this.popAndGetState();
                             break;
+                        case ParserState.OPENTAG:
+                            this.state = ParserState.TEXT;
+                            this.currChildNode.tag = "text";
+                            this.currChildNode.content += "<";
+                            break;
+                        case ParserState.TEXT:
+                            this.addToContent();
+                            break;
                         default:
                             break;
                     }
@@ -186,6 +255,7 @@ class SaxaMLLParser {
                 case "/":
                     switch (this.state) {
                         case ParserState.OPENTAG:
+                            this.pushChild();
                             this.state = ParserState.CLOSETAG;
                             break;
                         case ParserState.TEXT:
@@ -204,6 +274,12 @@ class SaxaMLLParser {
                             this.state = ParserState.ATTRKEY;
                             break;
                         case ParserState.TEXT:
+                            this.addToContent();
+                            break;
+                        case ParserState.OPENTAG:
+                            this.state = ParserState.TEXT;
+                            this.currChildNode.tag = "text";
+                            this.currChildNode.content += "<";
                             this.addToContent();
                             break;
                         default:
@@ -241,10 +317,16 @@ class SaxaMLLParser {
                             break;
                     }
                     break;
+
+                // a-z, A-Z, 0-9
                 default:
                     switch (this.state) {
                         case ParserState.TAGNAME:
+                            this.addToTagName();
+                            break;
                         case ParserState.OPENTAG:
+                            // Add 
+                            this.pushChild();
                             this.addToTagName();
                             this.state = ParserState.TAGNAME;
                             break;

@@ -353,8 +353,14 @@ describe('SaxaMLL - Core', () => {
         })
     })
 
-    it('should recognize `<` with spaces around it as text', () => {
-        parser.parse("< tweet >");
+    it('should be in a TEXT state if there is a space after `<', () => {
+        parser.parse("< tweet");
+        expect(parser.state).toEqual(ParserState.TEXT);
+    })
+
+    it('should recognize `<` immediately NOT followed by an alphabet as text', () => {
+        parser.parse("< 10");
+        parser.end();
         expect(parser.ast).toEqual({
             tag: "root",
             attributes: {},
@@ -362,7 +368,38 @@ describe('SaxaMLL - Core', () => {
                 tag: "text",
                 attributes: {},
                 children: [],
-                content: "< tweet >"
+                content: "< 10"
+            }]
+        })
+    })
+
+    it('should recognize `>` with spaces around it as text', () => {
+        parser.parse("tweet >");
+        parser.end();
+        expect(parser.ast).toEqual({
+            tag: "root",
+            attributes: {},
+            children: [{
+                tag: "text",
+                attributes: {},
+                children: [],
+                content: "tweet >"
+            }]
+        })
+
+        // Clearing out the parser
+        parser = new SaxaMLLParser();
+
+        parser.parse("10 < 20, but 20 > 5");
+        parser.end();
+        expect(parser.ast).toEqual({
+            tag: "root",
+            attributes: {},
+            children: [{
+                tag: "text",
+                attributes: {},
+                children: [],
+                content: "10 < 20, but 20 > 5"
             }]
         })
     })
