@@ -54,55 +54,21 @@ class IdleState extends SaxaMLLParserState {
 }
 
 class SaxaMLLParser {
-    state: ParserState;
-    buffer: string;
-    currIdx: number;
-
-    // Collector states
-    currChildNode: XMLNode;
-    currAttrKey: string;
-    currAttrValue: string;
-
-    // AST states
-    ast: XMLNode;
-    stack: StackNode[];
-
-    // Event emitter
-    emitter: SaxaMLLEmitter;
+    private state: ParserState = ParserState.IDLE;
+    private buffer: string = "";
+    private currIdx: number = 0;
+    private currChildNode: XMLNode = { tag: "", attributes: {}, children: [], content: "" };
+    private currAttrKey: string = "";
+    private currAttrValue: string = "";
+    private ast: XMLNode = { tag: "root", attributes: {}, children: [] };
+    private stack: { node: XMLNode; state: ParserState }[] = [{ node: this.ast, state: ParserState.IDLE }];
+    private emitter: SaxaMLLEmitter;
 
     constructor() {
-        this.state = ParserState.IDLE;
-        this.buffer = "";
-        this.currAttrKey = "";
-        this.currAttrValue = "";
-        this.currIdx = 0;
-
-        // Initialize the AST
-        this.ast = {
-            tag: "root",
-            attributes: {},
-            children: [],
-        }
-
-        // Collector for the current child node
-        this.currChildNode = {
-            tag: "",
-            attributes: {},
-            children: [],
-            content: ""
-        }
-
-        // Initialize the stack
-        this.stack = [{
-            node: this.ast,
-            state: ParserState.IDLE
-        }];
-
-        // Initialize the event emitter
         this.emitter = new SaxaMLLEmitter();
     }
 
-    flush() {
+    private flush() {
         this.state = ParserState.IDLE;
         this.buffer = "";
         this.currIdx = 0;
@@ -125,7 +91,7 @@ class SaxaMLLParser {
         }];
     }
 
-    flushCurrChildNode() {
+    private flushCurrChildNode() {
         this.currChildNode = {
             tag: "",
             attributes: {},
@@ -134,35 +100,35 @@ class SaxaMLLParser {
         };
     }
 
-    assignEmitter(emitter: SaxaMLLEmitter) {
+    public setEmitter(emitter: SaxaMLLEmitter) {
         this.emitter = emitter;
     }
 
-    setCurrTagName(tagName: string) {
+    private setCurrTagName(tagName: string) {
         this.currChildNode.tag = tagName;
     }
 
-    addToContent() {
+    private addToContent() {
         this.currChildNode.content += this.buffer[this.currIdx];
     }
 
-    addToTagName() {
+    private addToTagName() {
         this.currChildNode.tag += this.buffer[this.currIdx];
     }
 
-    addToAttrKey() {
+    private addToAttrKey() {
         this.currAttrKey += this.buffer[this.currIdx];
     }
-    addToAttrValue() {
+    private addToAttrValue() {
         this.currAttrValue += this.buffer[this.currIdx];
     }
-    addToAttr() {
+    private addToAttr() {
         this.currChildNode.attributes[this.currAttrKey] = this.currAttrValue;
         this.currAttrKey = "";
         this.currAttrValue = "";
     }
 
-    pushChild() {
+    private pushChild() {
         switch (this.state) {
             case ParserState.OPENTAG:
                 if ((this.stack[this.stack.length - 1].node.tag === "root") || (this.currChildNode.tag.length === 0)) break;
@@ -191,7 +157,7 @@ class SaxaMLLParser {
         this.flushCurrChildNode();
     }
 
-    popAndGetState() {
+    private popAndGetState() {
         if (this.stack.length === 1) {
             return ParserState.IDLE;
         }
@@ -205,7 +171,7 @@ class SaxaMLLParser {
         return this.stack[this.stack.length - 1].state;
     }
 
-    end() {
+    public end() {
         // Push the last child node
         this.pushChild();
 
@@ -215,7 +181,61 @@ class SaxaMLLParser {
         }
     }
 
-    parse(input: string) {
+    private handleLessThan() { }
+    private handleGreaterThan() { }
+    private handleSingleQuotation() { }
+    private handleDoubleQuotation() { }
+    private handleEqualSign() { }
+    private handleForwardSlash() { }
+    private handleSpace() { }
+    private handleAlphabet() { }
+    private handleNumber() { }
+    private handleDefault() { }
+
+    private parseChar(char: string) {
+        switch (char) {
+            case "<":
+                this.handleLessThan();
+                break;
+            case ">":
+                this.handleGreaterThan();
+                break;
+            case "/":
+                this.handleForwardSlash();
+                break;
+            case " ":
+                this.handleSpace();
+                break;
+            case "=":
+                this.handleEqualSign();
+                break;
+            case "'":
+                this.handleSingleQuotation();
+                break;
+            case '"':
+                this.handleDoubleQuotation();
+                break;
+            default:
+                if (char.match(/[a-zA-Z]/)) {
+                    this.handleAlphabet();
+                } else if (char.match(/[0-9]/)) {
+                    this.handleNumber();
+                } else {
+                    this.handleDefault();
+                }
+        }
+    }
+
+    public parse(input: string) {
+        this.buffer += input;
+        while (this.currIdx < this.buffer.length) {
+            const char = this.buffer[this.currIdx];;
+            this.parseChar(char);
+            this.currIdx++;
+        }
+    }
+
+    public _parse_old(input: string) {
         this.buffer += input;
         while (this.currIdx < this.buffer.length) {
             switch (this.buffer[this.currIdx]) {
