@@ -1,7 +1,7 @@
-import { XMLNodeDescriptionExample } from "./types/index";
+import { XMLNodeDescriptionExample } from "../types/index";
 
 
-class XMLNodeDescription {
+export default class XMLNodeDescription {
     tag: string;
     description: string;
     attributes: Record<string, string> = {};
@@ -43,5 +43,3 @@ class XMLNodeDescription {
         return examplePrompt
     }
 }
-
-export { XMLNodeDescription };

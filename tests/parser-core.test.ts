@@ -1,26 +1,6 @@
 import { beforeEach, describe, it, expect } from 'vitest';
 import { SaxaMLLEmitter, SaxaMLLParser, ParserState, XMLNodeDescription } from "../src";
-import { getText } from '../src/utils';
-import { XMLNode } from '../src/types';
 
-
-/**
- * Example syntax for XML DSL:
- * <tweet>
- *  <historicalFigure query="charlie parker portrait" success="Charlie Parker" failure="Charlie Parker"></historicalFigure> was a saxophonist.
- *  <replaceWithVideo query="charlie parker confirmation" success="Here is a video." failure=""></replaceWithVideo>
- * </tweet>
- * 
- * <tweet>
- * <question>When was Charlie Parker born?</question>
- * <answer>Charlie Parker was born in xxxx.</answer>
- * </tweet>
- * 
- * <tweet>
- * <question>What is Charlie Parker's most famous song?</question>
- * <answer>Charlie Parker's most famous song is xxxx.</answer>
- * </tweet>
- */
 
 describe('SaxaMLL - Core', () => {
     let parser: SaxaMLLParser;
@@ -359,21 +339,6 @@ describe('SaxaMLL - Core', () => {
         ])
     })
 
-    it('should be in an IDLE state on a lone self-closing tag', () => {
-        parser.parse("<tweet/>");
-        expect(parser.state).toEqual(ParserState.IDLE);
-    })
-
-    it('should be in an OPEN state where there is still an open tag with a lone self-closing tag', () => {
-        parser.parse("<tweet><question/>");
-        expect(parser.state).toEqual(ParserState.OPEN);
-    })
-
-    it('should be in an IDLE state when all tags are closed with a lone self-closing tag', () => {
-        parser.parse("<tweet><question/></tweet>");
-        expect(parser.state).toEqual(ParserState.IDLE);
-    })
-
     it('should handle self-closing tags', () => {
         parser.parse("<tweet id=\"1\" name=\"tweet\"/>");
 
@@ -418,57 +383,330 @@ describe('SaxaMLL - Core', () => {
             }]
         })
     })
-})
 
-describe('SaxaMLL - Events', () => {
-    it('should emit an event when a tag is opened', () => {
-        const emitter = new SaxaMLLEmitter();
-
-        let response = "";
-        emitter.addHandler('tagOpen', 'tweet', async (node: XMLNode) => {
-            response = node.tag;
-        })
-        emitter.processEvent('tagOpen', 'tweet', {
-            tag: "tweet",
-            attributes: {},
-            children: [],
-            content: ""
-        });
-
-        expect(response).toBe("tweet");
+    it('should be in an IDLE state on a lone self-closing tag', () => {
+        parser.parse("<tweet/>");
+        expect(parser.state).toEqual(ParserState.IDLE);
     })
-    it('should emit an event when a tag is closed', () => {
-        const emitter = new SaxaMLLEmitter();
 
-        let response = "";
-        emitter.addHandler('tagClose', 'tweet', async (node: XMLNode) => {
-            response = node.tag;
-        })
-        emitter.processEvent('tagClose', 'tweet', {
-            tag: "tweet",
-            attributes: {},
-            children: [],
-            content: ""
-        });
-
-        expect(response).toBe("tweet");
+    it('should be in an OPEN state where there is still an open tag with a lone self-closing tag', () => {
+        parser.parse("<tweet><question/>");
+        expect(parser.state).toEqual(ParserState.OPEN);
     })
-    it('should do nothing after handler has been removed', () => {
-        const emitter = new SaxaMLLEmitter();
 
-        let response = "nothing";
-        emitter.addHandler('tagClose', 'tweet', async (node: XMLNode) => {
-            response = node.tag;
-        })
-
-        emitter.removeHandler('tagClose', 'tweet');
-        emitter.processEvent('tagClose', 'tweet', {
-            tag: "tweet",
+    it('should parse key-value attributes of self-closing tags', () => {
+        parser.parse("<tweet id=\"1\" name=\"tweet\"/>");
+        expect(parser.ast).toEqual({
+            tag: "root",
             attributes: {},
-            children: [],
-            content: ""
-        });
+            children: [{
+                tag: "tweet",
+                attributes: {
+                    id: "1",
+                    name: "tweet"
+                },
+                children: [],
+                content: ""
+            }]
+        })
+    })
 
-        expect(response).toBe("nothing");
+    it('should parse key-value attributes of self-closing tags, nested', () => {
+        parser.parse("<tweet><question id=\"1\" name=\"question\"/></tweet>");
+        expect(parser.ast).toEqual({
+            tag: "root",
+            attributes: {},
+            children: [{
+                tag: "tweet",
+                attributes: {},
+                children: [{
+                    tag: "question",
+                    attributes: {
+                        id: "1",
+                        name: "question"
+                    },
+                    children: [],
+                    content: ""
+                }],
+                content: ""
+            }]
+        })
+    })
+
+    it('should parse key-value attributes of self-closing tags, nested, mixed types', () => {
+        parser.parse("<tweet id=\"1\"><question name=\"question\"/></tweet>");
+        expect(parser.ast).toEqual({
+            tag: "root",
+            attributes: {},
+            children: [{
+                tag: "tweet",
+                attributes: {
+                    id: "1"
+                },
+                children: [{
+                    tag: "question",
+                    attributes: {
+                        name: "question"
+                    },
+                    children: [],
+                    content: ""
+                }],
+                content: ""
+            }]
+        })
+    });
+
+    it('should ERROR out on mismatched opening and closing tags', () => {
+        parser.parse("<tweet></question>");
+        expect(parser.state).toEqual(ParserState.ERROR);
+    })
+
+    it('should ERROR out on mismatched nested opening and closing tags', () => {
+        parser.parse("<tweet><question></tweet>");
+        expect(parser.state).toEqual(ParserState.ERROR);
+    })
+
+    it('should save the content of the error, nested, self-closing version', () => {
+        parser.parse("<tweet><question/></question>");
+        expect(parser.ast).toEqual({
+            tag: "root",
+            attributes: {},
+            children: [{
+                tag: "tweet",
+                attributes: {},
+                children: [
+                    {
+                        tag: "question",
+                        attributes: {},
+                        children: [],
+                        content: ""
+                    },
+                    {
+                        tag: "error",
+                        attributes: {},
+                        children: [],
+                        content: "Expected closing tag for \"tweet\" but found \"question\""
+                    }
+                ],
+                content: ""
+            }]
+        })
+    })
+
+    it('should save the content of the error', () => {
+        parser.parse("<tweet></question>");
+        expect(parser.ast).toEqual({
+            tag: "root",
+            attributes: {},
+            children: [{
+                tag: "tweet",
+                attributes: {},
+                children: [
+                    {
+                        tag: "error",
+                        attributes: {},
+                        children: [],
+                        content: "Expected closing tag for \"tweet\" but found \"question\""
+                    }
+                ],
+                content: ""
+            }]
+        })
+    })
+
+    it('should save the content of the error, nested version', () => {
+        parser.parse("<tweet><question></tweet>");
+        expect(parser.ast).toEqual({
+            tag: "root",
+            attributes: {},
+            children: [{
+                tag: "tweet",
+                attributes: {},
+                children: [
+                    {
+                        tag: "question",
+                        attributes: {},
+                        children: [{
+                            tag: "error",
+                            attributes: {},
+                            children: [],
+                            content: "Expected closing tag for \"question\" but found \"tweet\""
+                        }],
+                        content: ""
+                    },
+                ],
+                content: ""
+            }]
+        })
+    })
+
+    it('should gracefully recover from an error', () => {
+        parser.parse("<tweet></question>");
+        parser.parse("<question></question>");
+        expect(parser.ast).toEqual({
+            tag: "root",
+            attributes: {},
+            children: [{
+                tag: "tweet",
+                attributes: {},
+                children: [
+                    {
+                        tag: "error",
+                        attributes: {},
+                        children: [],
+                        content: "Expected closing tag for \"tweet\" but found \"question\""
+                    },
+                    {
+                        tag: "question",
+                        attributes: {},
+                        children: [],
+                        content: ""
+                    }
+                ],
+                content: ""
+            }]
+        })
+    })
+
+    it('should gracefully recover from an error, mixed content', () => {
+        parser.parse("<tweet></question>");
+        parser.parse("Hello</tweet>");
+        expect(parser.ast).toEqual({
+            tag: "root",
+            attributes: {},
+            children: [{
+                tag: "tweet",
+                attributes: {},
+                children: [
+                    {
+                        tag: "error",
+                        attributes: {},
+                        children: [],
+                        content: "Expected closing tag for \"tweet\" but found \"question\""
+                    },
+                    {
+                        tag: "text",
+                        attributes: {},
+                        children: [],
+                        content: "Hello"
+                    }
+                ],
+                content: "",
+            }],
+        })
+    })
+
+    it('should gracefully recover from an error, closing tag only', () => {
+        parser.parse("</question>");
+        expect(parser.ast).toEqual({
+            tag: "root",
+            attributes: {},
+            children: [{
+                tag: "error",
+                attributes: {},
+                children: [],
+                content: "Unexpected closing tag \"question\""
+            }]
+        })
+    })
+
+    it('should gracefully recover from an error, start with closing tag, then open tag', () => {
+        parser.parse("</question><tweet>");
+        expect(parser.ast).toEqual({
+            tag: "root",
+            attributes: {},
+            children: [{
+                tag: "error",
+                attributes: {},
+                children: [],
+                content: "Unexpected closing tag \"question\""
+            }, {
+                tag: "tweet",
+                attributes: {},
+                children: [],
+                content: ""
+            }]
+        })
+    })
+
+    it('should interpret `<\"` as text', () => {
+        parser.parse("<\"");
+        parser.end();
+        expect(parser.ast).toEqual({
+            tag: "root",
+            attributes: {},
+            children: [{
+                tag: "text",
+                attributes: {},
+                children: [],
+                content: "<\""
+            }]
+        })
+    })
+
+    it('should interpret `<\'` as text', () => {
+        parser.parse("<'");
+        parser.end();
+        expect(parser.ast).toEqual({
+            tag: "root",
+            attributes: {},
+            children: [{
+                tag: "text",
+                attributes: {},
+                children: [],
+                content: "<'"
+            }]
+        })
+    })
+
+    it('should interpret `<>` as text', () => {
+        parser.parse("<>");
+        parser.end();
+        expect(parser.ast).toEqual({
+            tag: "root",
+            attributes: {},
+            children: [{
+                tag: "text",
+                attributes: {},
+                children: [],
+                content: "<>"
+            }]
+        })
+    })
+
+    it('should have raw text nodes', () => {
+        parser.parse("Hello");
+        parser.end();
+
+        expect(parser.ast).toEqual({
+            tag: "root",
+            attributes: {},
+            children: [{
+
+                tag: "text",
+                attributes: {},
+                children: [],
+                content: "Hello"
+            }]
+        })
+    })
+
+    it('non-text content field should have raw xml content', () => {
+        parser.parse("<tweet>Hello</tweet>");
+        expect(parser.ast).toEqual({
+            tag: "root",
+            attributes: {},
+            children: [{
+                tag: "tweet",
+                attributes: {},
+                children: [{
+                    tag: "text",
+                    attributes: {},
+                    children: [],
+                    content: "Hello"
+                }],
+                content: "<tweet>Hello</tweet>"
+            }]
+        })
     })
 })

@@ -1,7 +1,5 @@
-import { beforeEach, describe, it, expect } from 'vitest';
-import { SaxaMLLEmitter, SaxaMLLParser, ParserState, XMLNodeDescription } from "../src";
-import { getText } from '../src/utils';
-import { XMLNode } from '../src/types';
+import { describe, it, expect } from 'vitest';
+import { getText } from '../src';
 
 describe('SaxaMLL - Utils', () => {
     it('gets text from a text node', () => {
