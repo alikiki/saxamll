@@ -1,5 +1,5 @@
 import { beforeEach, describe, it, expect } from 'vitest';
-import { SaxaMLLEmitter, SaxaMLLParser, ParserState, XMLNodeDescription } from "../src";
+import { SaxaMLLParser, ParserState } from "../src";
 
 
 describe('SaxaMLL - Core', () => {
@@ -708,5 +708,15 @@ describe('SaxaMLL - Core', () => {
                 content: "<tweet>Hello</tweet>"
             }]
         })
+    })
+
+    it('should ', () => {
+        /**
+         * getText --> the literal text returned by the model
+         * getRawText --> the raw XML returned by the model
+         * parser.handleText('alert', () => {
+         *  
+         * })
+         */
     })
 })

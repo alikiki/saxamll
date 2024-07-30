@@ -1,19 +1,19 @@
 import { XMLNode } from "../types/index";
-import SaxaMLLEmitter from "./emitter";
+import SaxaMLLExecutor from "./executor";
 
 export default class SaxaMLLParserContextManager {
     _currChildNode: XMLNode = { tag: "", attributes: {}, children: [], content: "" };
     _currAttrKey: string = "";
     _currAttrValue: string = "";
 
-    public emitter: SaxaMLLEmitter;
+    public executor: SaxaMLLExecutor;
 
-    constructor(emitter: SaxaMLLEmitter) {
-        this.emitter = emitter;
+    constructor(executor: SaxaMLLExecutor) {
+        this.executor = executor;
     }
 
-    public setEmitter(emitter: SaxaMLLEmitter) {
-        this.emitter = emitter;
+    public setExecutor(executor: SaxaMLLExecutor) {
+        this.executor = executor;
     }
 
     public clearContext() {

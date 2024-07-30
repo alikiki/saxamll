@@ -1,5 +1,5 @@
 import { beforeEach, describe, it, expect } from 'vitest';
-import { SaxaMLLEmitter, SaxaMLLParser, ParserState, XMLNodeDescription } from "../src";
+import { SaxaMLLExecutor, SaxaMLLParser, ParserState, XMLNodeDescription } from "../src";
 import { getText } from '../src/utils';
 import { XMLNode } from '../src/types';
 
@@ -7,7 +7,7 @@ describe('SaxaMLL - Integration', () => {
     it('should be read the contents of a single xml tag', () => {
         const parser = new SaxaMLLParser();
         let results = "";
-        parser.emitter.addHandler('tagClose', 'tweet', (node: XMLNode) => {
+        parser.executor.addHandler('tagClose', 'tweet', (node: XMLNode) => {
             results = getText(node);
         })
 
@@ -17,7 +17,7 @@ describe('SaxaMLL - Integration', () => {
     it('should be able to interpret attributes on tagOpen', () => {
         const parser = new SaxaMLLParser();
         let results = "";
-        parser.emitter.addHandler('tagOpen', 'tweet', (node: XMLNode) => {
+        parser.executor.addHandler('tagOpen', 'tweet', (node: XMLNode) => {
             results = node.attributes.id;
         })
 
@@ -28,10 +28,10 @@ describe('SaxaMLL - Integration', () => {
         const parser = new SaxaMLLParser();
         let results = "";
 
-        parser.emitter.addHandler('tagOpen', 'response', (node: XMLNode) => {
+        parser.executor.addHandler('tagOpen', 'response', (node: XMLNode) => {
             results += getTextDelta(node);
         })
-        parser.emitter.addHandler('tagClose', 'toReplaceWithImage', async (node: XMLNode) => {
+        parser.executor.addHandler('tagClose', 'toReplaceWithImage', async (node: XMLNode) => {
             const query = node.attributes.query;
             const success = node.attributes.onSuccess;
             const failure = node.attributes.onFailure;

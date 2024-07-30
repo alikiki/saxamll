@@ -1,7 +1,6 @@
 import { beforeEach, describe, it, expect } from 'vitest';
-import { SaxaMLLEmitter, SaxaMLLParser, ParserState, XMLNodeDescription } from "../src";
-import { getText } from '../src/utils';
-import { XMLNode } from '../src/types';
+import { SaxaMLLExecutor, SaxaMLLParser, ParserState, XMLNodeDescription } from "../src";
+
 
 describe('SaxaMLL - XMLNodeDescription', () => {
     it('generates a prompt from an XML AST with no attributes', () => {

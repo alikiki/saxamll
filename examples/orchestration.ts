@@ -58,11 +58,70 @@ blogSearchTag.setExamples([
 ])
 
 
+class KnowledgeOrchestration {
+
+    public notes: string[] = [];
+    public parser: SaxaMLLParser = new SaxaMLLParser();
+
+    queryImages() {
+        this.parser.executor.addHandler('tagOpen', imageSearchTag, async (node: XMLNode) => {
+            // Search for the image
+            const query = node.attributes.query;
+            const image = await fetch("https://www.someImageAPI.com/q=" + query);
+            const imageJson = await image.json();
+
+            // If the image is found
+            if (imageJson.results.length > 0) {
+                this.notes.push(`<img src="${imageJson.results[0].urls.full}"></img>`);
+            } else {
+                this.notes.push("No images found.");
+            }
+        })
+    }
+}
+
+class PersonalAssistant {
+    public events: string[] = [];
+    public parser: SaxaMLLParser = new SaxaMLLParser();
+
+    getEvents() {
+        this.parser.executor.addHandler('tagOpen', 'getEvents', async (node: XMLNode) => {
+            // Search for the image
+            const start = node.attributes.start;
+            const end = node.attributes.end;
+
+            const query = node.attributes.query;
+            const event = await fetch("https://www.someEventAPI.com/q=" + query);
+            const eventJson = await event.json();
+
+            if (eventJson.results.length > 0) {
+                this.events.push(eventJson.results);
+            } else {
+                this.events.push("No events found.");
+            }
+
+            const responsesFromAssistant = await fetch("https://www.someAssistantAPI.com/q=" + eventJson.results);
+            const assistantJson = await responsesFromAssistant.json();
+
+            if (assistantJson.results.length > 0) {
+                console.log(assistantJson.results);
+            } else {
+                console.log("No responses found.");
+            }
+        })
+    }
+}
+
+const responses = await eventAssistant.handleTagOpen('getEvent', async (node) => { setTimeout(() => { return "Hello" }, 1000) });
+
+const responses = eventAssistant.handleTagOpen('tweet', (node) => { return "Hello" });
+
+
 // On the parser side:
 const saxParser = new SaxaMLLParser();
 
 // The `tagOpen` event is triggered when all the attributes of <imageSearch> are parsed.
-saxParser.emitter.addHandler('tagOpen', imageSearchTag, async (node: XMLNode) => {
+saxParser.executor.addHandler('tagOpen', imageSearchTag, async (node: XMLNode) => {
     // Search for the image
     const query = node.attributes.query;
     const image = await fetch("https://api.unsplash.com/search/photos?query=" + query);
@@ -76,7 +135,7 @@ saxParser.emitter.addHandler('tagOpen', imageSearchTag, async (node: XMLNode) =>
     }
 })
 
-saxParser.emitter.addHandler('tagOpen', videoSearchTag, async (node: XMLNode) => {
+saxParser.executor.addHandler('tagOpen', videoSearchTag, async (node: XMLNode) => {
     // Search for the video
     const query = node.attributes.query;
     const video = await fetch("https://api.youtube.com/search/videos?query=" + query);
@@ -91,7 +150,7 @@ saxParser.emitter.addHandler('tagOpen', videoSearchTag, async (node: XMLNode) =>
     }
 })
 
-saxParser.emitter.addHandler('tagOpen', blogSearchTag, async (node: XMLNode) => {
+saxParser.executor.addHandler('tagOpen', blogSearchTag, async (node: XMLNode) => {
     // Search for the blog post
     const query = node.attributes.query;
     const blog = await fetch("https://api.blog.com/search/posts?query=" + query);

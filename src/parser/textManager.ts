@@ -1,4 +1,4 @@
-import SaxaMLLEmitter from "./emitter";
+import SaxaMLLEmitter from "./executor";
 
 interface Scope {
     scope: string;
@@ -50,6 +50,16 @@ export default class SaxaMLLTextManager {
 
     public enterScope(scope: string) {
         this._push(scope);
+    }
+
+    public getScopedText(scope: string) {
+        const [start, end] = this.scopedContent[scope];
+        return this.content.slice(start, end);
+    }
+
+    public getScopedRawText(scope: string) {
+        const [start, end] = this.scopedRawContent[scope];
+        return this.rawContent.slice(start, end);
     }
 
     private markStart() {

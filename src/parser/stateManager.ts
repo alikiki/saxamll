@@ -1,6 +1,6 @@
 import { ParserState } from "./state";
 import { XMLNode } from "../types/index";
-import SaxaMLLEmitter from "./emitter";
+import SaxaMLLExecutor from "./executor";
 import SaxaMLLParserContextManager from "./contextManager";
 
 export default class SaxaMLLParserStateManager {
@@ -8,11 +8,11 @@ export default class SaxaMLLParserStateManager {
     private _ast: XMLNode = { tag: "root", attributes: {}, children: [] };
     private _stack: { node: XMLNode; state: ParserState }[] = [{ node: this._ast, state: ParserState.IDLE }];
 
-    public emitter: SaxaMLLEmitter;
+    public executor: SaxaMLLExecutor;
     contextManager: SaxaMLLParserContextManager;
 
-    constructor(contextManager: SaxaMLLParserContextManager, emitter: SaxaMLLEmitter) {
-        this.emitter = emitter;
+    constructor(contextManager: SaxaMLLParserContextManager, executor: SaxaMLLExecutor) {
+        this.executor = executor;
         this.contextManager = contextManager;
     }
 
@@ -42,7 +42,7 @@ export default class SaxaMLLParserStateManager {
 
         // Emit an event that a opening tag has been parsed
         const modifiedTagName = `tagOpen:${node.tag}`;
-        this.emitter.emit(modifiedTagName, node);
+        this.executor.emit(modifiedTagName, node);
 
         // Empty out the collector
         this.contextManager.clearChildNode();
@@ -74,7 +74,7 @@ export default class SaxaMLLParserStateManager {
 
         const topOfStack = this._popAndPeek();
         const modifiedTagName = `tagClose:${topOfStack.node.tag}`;
-        this.emitter.emit(modifiedTagName, topOfStack.node);
+        this.executor.emit(modifiedTagName, topOfStack.node);
 
         this.contextManager.clearChildNode();
         this.transition(topOfStack.state);
@@ -92,7 +92,7 @@ export default class SaxaMLLParserStateManager {
 
         const topOfStack = this._popAndPeek();
         const modifiedTagName = `tagClose:${topOfStack.node.tag}`;
-        this.emitter.emit(modifiedTagName, topOfStack.node);
+        this.executor.emit(modifiedTagName, topOfStack.node);
 
         this.contextManager.clearChildNode();
         this.transition(topOfStack.state);

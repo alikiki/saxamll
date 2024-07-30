@@ -1,5 +1,5 @@
 import { ParserState } from "./state";
-import SaxaMLLEmitter from "./emitter";
+import SaxaMLLExecutor from "./executor";
 import SaxaMLLParserContextManager from "./contextManager";
 import SaxaMLLParserStateManager from "./stateManager";
 
@@ -7,11 +7,11 @@ export default class SaxaMLLParser {
     private buffer: string = "";
     private currIdx: number = 0;
 
-    private emitter: SaxaMLLEmitter = new SaxaMLLEmitter();
+    public executor: SaxaMLLExecutor = new SaxaMLLExecutor();
 
-    private contextManager: SaxaMLLParserContextManager = new SaxaMLLParserContextManager(this.emitter);
+    private contextManager: SaxaMLLParserContextManager = new SaxaMLLParserContextManager(this.executor);
 
-    private stateManager: SaxaMLLParserStateManager = new SaxaMLLParserStateManager(this.contextManager, this.emitter);
+    private stateManager: SaxaMLLParserStateManager = new SaxaMLLParserStateManager(this.contextManager, this.executor);
 
 
     public get ast() {
@@ -40,8 +40,8 @@ export default class SaxaMLLParser {
         this.stateManager.flush();
     }
 
-    public setEmitter(emitter: SaxaMLLEmitter) {
-        this.emitter = emitter;
+    public setExecutor(executor: SaxaMLLExecutor) {
+        this.executor = executor;
     }
 
     // <
