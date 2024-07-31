@@ -3,6 +3,8 @@ export interface XMLNode {
     attributes: Record<string, string>;
     children: XMLNode[];
     content?: string;
+    pre?: string;
+    post?: string;
 }
 
 export interface XMLNodeDescriptionExample {

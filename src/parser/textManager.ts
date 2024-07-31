@@ -14,7 +14,8 @@ interface Scope {
  * 2. Add to content if the parser state is TEXT.
  * - For each tag in the stack, increment the end pointer of the content.
  * 
- * 3. When the scope changes, mark 
+ * What happens on duplicate tags?
+ * 
  */
 
 export default class SaxaMLLTextManager {

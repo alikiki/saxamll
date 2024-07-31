@@ -53,6 +53,7 @@ export default class SaxaMLLParser {
         switch (this.state) {
             case ParserState.ATTRKEY:
             case ParserState.TAGNAME:
+                this.contextManager.addToPre(c);
                 this.stateManager.transition(ParserState.OPEN);
                 this.stateManager.enterScope();
                 break;
@@ -61,9 +62,11 @@ export default class SaxaMLLParser {
             // This assumption isn't always true
             // For example, self-closing tags.
             case ParserState.CLOSETAG:
+                this.contextManager.addToPost(c);
                 this.stateManager.exitScope();
                 break;
             case ParserState.CLOSETAGLONE:
+                this.contextManager.addToPre(c);
                 this.stateManager.tagClosed();
                 break;
             case ParserState.OPENTAG:
@@ -85,10 +88,15 @@ export default class SaxaMLLParser {
         switch (this.state) {
             case ParserState.ATTRKEY:
             case ParserState.TAGNAME:
+                this.contextManager.addToPre(c);
                 this.stateManager.transition(ParserState.CLOSETAGLONE);
                 break;
             case ParserState.OPENTAG:
+                // Commit whatever node has been populated so far
                 this.stateManager.commitChild();
+
+                console.log("Committing child node");
+                this.contextManager.addToPost("</");
                 this.stateManager.transition(ParserState.CLOSETAG);
                 break;
             case ParserState.TEXT:
@@ -204,14 +212,20 @@ export default class SaxaMLLParser {
     private handleDefault(c: string) {
         switch (this.state) {
             case ParserState.TAGNAME:
+                this.contextManager.addToPre(c);
                 this.contextManager.addToTagName(c);
                 break;
             case ParserState.OPENTAG:
+                // Commit whatever node has been populated so far
                 this.stateManager.commitChild();
+
+                // Start a new node and start accumulating 
+                this.contextManager.addToPre(`<${c}`);
                 this.contextManager.addToTagName(c);
                 this.stateManager.transition(ParserState.TAGNAME);
                 break;
             case ParserState.CLOSETAG:
+                this.contextManager.addToPost(c);
                 this.contextManager.addToTagName(c);
                 break;
             case ParserState.ERROR:
@@ -225,9 +239,11 @@ export default class SaxaMLLParser {
                 this.contextManager.addToContent(c);
                 break;
             case ParserState.ATTRKEY:
+                this.contextManager.addToPre(c);
                 this.contextManager.addToAttrKey(c);
                 break;
             case ParserState.ATTRVALUE:
+                this.contextManager.addToPost(c);
                 this.contextManager.addToAttrValue(c);
                 break;
             default:

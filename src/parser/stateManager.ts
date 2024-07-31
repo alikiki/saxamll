@@ -72,6 +72,9 @@ export default class SaxaMLLParserStateManager {
             return;
         }
 
+        // Add the post content to the current top of stack
+        currentTopOfStack.node.post = currentChildNode.post;
+
         const topOfStack = this._popAndPeek();
         const modifiedTagName = `tagClose:${topOfStack.node.tag}`;
         this.executor.emit(modifiedTagName, topOfStack.node);

@@ -582,7 +582,7 @@ describe('SaxaMLL - Core', () => {
                         tag: "error",
                         attributes: {},
                         children: [],
-                        content: "Expected closing tag for \"tweet\" but found \"question\""
+                        content: "Expected closing tag for \"tweet\" but found \"question\"",
                     },
                     {
                         tag: "text",
@@ -693,6 +693,7 @@ describe('SaxaMLL - Core', () => {
 
     it('non-text content field should have raw xml content', () => {
         parser.parse("<tweet>Hello</tweet>");
+        console.log(JSON.stringify(parser.ast));
         expect(parser.ast).toEqual({
             tag: "root",
             attributes: {},
@@ -705,7 +706,9 @@ describe('SaxaMLL - Core', () => {
                     children: [],
                     content: "Hello"
                 }],
-                content: "<tweet>Hello</tweet>"
+                pre: "<tweet>",
+                post: "</tweet>",
+                content: ""
             }]
         })
     })

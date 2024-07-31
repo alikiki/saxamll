@@ -22,6 +22,46 @@ export default class SaxaMLLParserContextManager {
         this.clearAttrValue();
     }
 
+    // Pre + Post
+    public get currPre() {
+        return this._currChildNode.pre;
+    }
+
+    public get currPost() {
+        return this._currChildNode.post;
+    }
+
+    public addToPre(s: string) {
+        if (!this._currChildNode.pre) this._currChildNode.pre = "";
+        this._currChildNode.pre += s;
+    }
+
+    public addToPost(s: string) {
+        if (!this._currChildNode.post) this._currChildNode.post = "";
+        this._currChildNode.post += s;
+    }
+
+    public setPre(s: string) {
+        this._currChildNode.pre = s;
+    }
+
+    public setPost(s: string) {
+        this._currChildNode.post = s;
+    }
+
+    public clearPre() {
+        this._currChildNode.pre = "";
+    }
+
+    public clearPost() {
+        this._currChildNode.post = "";
+    }
+
+    public clearRaw() {
+        this.clearPre();
+        this.clearPost();
+    }
+
     // Child node
     public get currChildNode() {
         return this._currChildNode;
