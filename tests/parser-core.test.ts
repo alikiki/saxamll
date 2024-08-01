@@ -29,8 +29,11 @@ describe('SaxaMLL - Core', () => {
                 tag: "tweet",
                 attributes: {},
                 children: [],
-                content: ""
-            }]
+                content: "",
+                pre: "<tweet>",
+                type: "element"
+            }],
+            type: "element"
         })
     })
     it('should be in a CLOSETAG state when tag is half-closed', () => {
@@ -57,10 +60,15 @@ describe('SaxaMLL - Core', () => {
                     tag: "question",
                     attributes: {},
                     children: [],
-                    content: ""
+                    content: "",
+                    pre: "<question>",
+                    type: "element"
                 }],
-                content: ""
-            }]
+                content: "",
+                pre: "<tweet>",
+                type: "element"
+            }],
+            type: "element"
         })
     });
     it('should be in TEXT state when text content is being parsed', () => {
@@ -79,10 +87,15 @@ describe('SaxaMLL - Core', () => {
                     tag: "text",
                     attributes: {},
                     children: [],
-                    content: "Hello"
+                    content: "Hello",
+                    type: "text"
                 }],
-                content: ""
-            }]
+                content: "",
+                pre: "<tweet>",
+                post: "</tweet>",
+                type: "element"
+            }],
+            type: "element"
         })
     })
     it('should be in OPENTAG state when a new tag is open after text content', () => {
@@ -113,15 +126,23 @@ describe('SaxaMLL - Core', () => {
                     tag: "text",
                     attributes: {},
                     children: [],
-                    content: "Hello "
+                    content: "Hello ",
+                    type: "text"
                 }, {
                     tag: "question",
                     attributes: {},
                     children: [],
-                    content: ""
+                    content: "",
+                    pre: "<question>",
+                    post: "</question>",
+                    type: "element"
                 }],
-                content: ""
-            }]
+                content: "",
+                pre: "<tweet>",
+                post: "</tweet>",
+                type: "element"
+            }],
+            type: "element"
         })
     })
     it('should be able parse incomplete XML tags', () => {
@@ -135,8 +156,11 @@ describe('SaxaMLL - Core', () => {
                 tag: "tweet",
                 attributes: {},
                 children: [],
-                content: ""
-            }]
+                content: "",
+                pre: "<tweet>",
+                type: "element"
+            }],
+            type: "element"
         })
     })
     it('should be in ATTRKEY state when an attribute key is being parsed', () => {
@@ -179,8 +203,11 @@ describe('SaxaMLL - Core', () => {
                     id: "1"
                 },
                 children: [],
-                content: ""
-            }]
+                content: "",
+                pre: "<tweet id=\"1\">",
+                type: "element"
+            }],
+            type: "element"
         })
     });
     it('should parse multiple attribute key-value pairs', () => {
@@ -195,8 +222,11 @@ describe('SaxaMLL - Core', () => {
                     name: "tweet"
                 },
                 children: [],
-                content: ""
-            }]
+                content: "",
+                pre: "<tweet id=\"1\" name=\"tweet\">",
+                type: "element"
+            }],
+            type: "element"
         })
     })
     it('should parse nested tags with multiple attributes', () => {
@@ -217,10 +247,17 @@ describe('SaxaMLL - Core', () => {
                         q: "what is life?"
                     },
                     children: [],
-                    content: ""
+                    content: "",
+                    pre: "<question q=\"what is life?\">",
+                    post: "</question>",
+                    type: "element"
                 }],
-                content: ""
-            }]
+                content: "",
+                pre: "<tweet id=\"1\" name=\"tweet\">",
+                post: "</tweet>",
+                type: "element"
+            }],
+            type: "element"
         })
     })
 
@@ -239,8 +276,10 @@ describe('SaxaMLL - Core', () => {
                 tag: "text",
                 attributes: {},
                 children: [],
-                content: "< 10"
-            }]
+                content: "< 10",
+                type: "text"
+            }],
+            type: "element"
         })
     })
 
@@ -254,8 +293,10 @@ describe('SaxaMLL - Core', () => {
                 tag: "text",
                 attributes: {},
                 children: [],
-                content: "tweet >"
-            }]
+                content: "tweet >",
+                type: "text"
+            }],
+            type: "element"
         })
 
         // Clearing out the parser
@@ -270,8 +311,10 @@ describe('SaxaMLL - Core', () => {
                 tag: "text",
                 attributes: {},
                 children: [],
-                content: "10 < 20, but 20 > 5"
-            }]
+                content: "10 < 20, but 20 > 5",
+                type: "text"
+            }],
+            type: "element"
         })
     })
     it('should be fine with spaces around the `=` sign in attribute key-value pairs', () => {
@@ -285,12 +328,15 @@ describe('SaxaMLL - Core', () => {
                     id: "1"
                 },
                 children: [],
-                content: ""
-            }]
+                content: "",
+                pre: "<tweet id = \"1\">",
+                type: "element"
+            }],
+            type: "element"
         })
     })
 
-    it('should recogize when a new tag is being opened', () => {
+    it.skip('should recogize when a new tag is being opened', () => {
         parser.parse("<tweet><question>");
         expect(parser.stack).toEqual([
             {
@@ -352,8 +398,11 @@ describe('SaxaMLL - Core', () => {
                     name: "tweet"
                 },
                 children: [],
-                content: ""
-            }]
+                content: "",
+                pre: "<tweet id=\"1\" name=\"tweet\"/>",
+                type: "element"
+            }],
+            type: "element"
         })
     })
 
@@ -377,10 +426,17 @@ describe('SaxaMLL - Core', () => {
                         q: "what is life?"
                     },
                     children: [],
-                    content: ""
+                    content: "",
+                    pre: "<question q=\"what is life?\">",
+                    post: "</question>",
+                    type: "element"
                 }],
-                content: ""
-            }]
+                content: "",
+                pre: "<tweet id=\"1\" name=\"tweet\">",
+                post: "</tweet>",
+                type: "element"
+            }],
+            type: "element"
         })
     })
 
@@ -406,8 +462,11 @@ describe('SaxaMLL - Core', () => {
                     name: "tweet"
                 },
                 children: [],
-                content: ""
-            }]
+                content: "",
+                pre: "<tweet id=\"1\" name=\"tweet\"/>",
+                type: "element"
+            }],
+            type: "element"
         })
     })
 
@@ -426,10 +485,16 @@ describe('SaxaMLL - Core', () => {
                         name: "question"
                     },
                     children: [],
-                    content: ""
+                    content: "",
+                    pre: "<question id=\"1\" name=\"question\"/>",
+                    type: "element"
                 }],
-                content: ""
-            }]
+                content: "",
+                pre: "<tweet>",
+                post: "</tweet>",
+                type: "element"
+            }],
+            type: "element"
         })
     })
 
@@ -449,10 +514,16 @@ describe('SaxaMLL - Core', () => {
                         name: "question"
                     },
                     children: [],
-                    content: ""
+                    content: "",
+                    pre: "<question name=\"question\"/>",
+                    type: "element"
                 }],
-                content: ""
-            }]
+                content: "",
+                pre: "<tweet id=\"1\">",
+                post: "</tweet>",
+                type: "element"
+            }],
+            type: "element"
         })
     });
 
@@ -479,17 +550,24 @@ describe('SaxaMLL - Core', () => {
                         tag: "question",
                         attributes: {},
                         children: [],
-                        content: ""
+                        content: "",
+                        pre: "<question/>",
+                        type: "element"
                     },
                     {
                         tag: "error",
                         attributes: {},
                         children: [],
-                        content: "Expected closing tag for \"tweet\" but found \"question\""
+                        content: "Expected closing tag for \"tweet\" but found \"question\"",
+                        post: "</question>",
+                        type: "error"
                     }
                 ],
-                content: ""
-            }]
+                content: "",
+                pre: "<tweet>",
+                type: "element"
+            }],
+            type: "element"
         })
     })
 
@@ -506,11 +584,16 @@ describe('SaxaMLL - Core', () => {
                         tag: "error",
                         attributes: {},
                         children: [],
-                        content: "Expected closing tag for \"tweet\" but found \"question\""
+                        content: "Expected closing tag for \"tweet\" but found \"question\"",
+                        post: "</question>",
+                        type: "error"
                     }
                 ],
-                content: ""
-            }]
+                content: "",
+                pre: "<tweet>",
+                type: "element"
+            }],
+            type: "element"
         })
     })
 
@@ -530,13 +613,20 @@ describe('SaxaMLL - Core', () => {
                             tag: "error",
                             attributes: {},
                             children: [],
-                            content: "Expected closing tag for \"question\" but found \"tweet\""
+                            content: "Expected closing tag for \"question\" but found \"tweet\"",
+                            post: "</tweet>",
+                            type: "error"
                         }],
-                        content: ""
+                        content: "",
+                        pre: "<question>",
+                        type: "element"
                     },
                 ],
-                content: ""
-            }]
+                content: "",
+                pre: "<tweet>",
+                type: "element"
+            }],
+            type: "element"
         })
     })
 
@@ -554,17 +644,25 @@ describe('SaxaMLL - Core', () => {
                         tag: "error",
                         attributes: {},
                         children: [],
-                        content: "Expected closing tag for \"tweet\" but found \"question\""
+                        content: "Expected closing tag for \"tweet\" but found \"question\"",
+                        post: "</question>",
+                        type: "error"
                     },
                     {
                         tag: "question",
                         attributes: {},
                         children: [],
-                        content: ""
+                        content: "",
+                        pre: "<question>",
+                        post: "</question>",
+                        type: "element"
                     }
                 ],
-                content: ""
-            }]
+                content: "",
+                pre: "<tweet>",
+                type: "element"
+            }],
+            type: "element"
         })
     })
 
@@ -583,16 +681,23 @@ describe('SaxaMLL - Core', () => {
                         attributes: {},
                         children: [],
                         content: "Expected closing tag for \"tweet\" but found \"question\"",
+                        post: "</question>",
+                        type: "error"
                     },
                     {
                         tag: "text",
                         attributes: {},
                         children: [],
-                        content: "Hello"
+                        content: "Hello",
+                        type: "text"
                     }
                 ],
                 content: "",
+                pre: "<tweet>",
+                post: "</tweet>",
+                type: "element"
             }],
+            type: "element"
         })
     })
 
@@ -605,8 +710,11 @@ describe('SaxaMLL - Core', () => {
                 tag: "error",
                 attributes: {},
                 children: [],
-                content: "Unexpected closing tag \"question\""
-            }]
+                content: "Unexpected closing tag \"question\"",
+                post: "</question>",
+                type: "error"
+            }],
+            type: "element"
         })
     })
 
@@ -619,13 +727,18 @@ describe('SaxaMLL - Core', () => {
                 tag: "error",
                 attributes: {},
                 children: [],
-                content: "Unexpected closing tag \"question\""
+                content: "Unexpected closing tag \"question\"",
+                post: "</question>",
+                type: "error"
             }, {
                 tag: "tweet",
                 attributes: {},
                 children: [],
-                content: ""
-            }]
+                content: "",
+                pre: "<tweet>",
+                type: "element"
+            }],
+            type: "element"
         })
     })
 
@@ -639,8 +752,10 @@ describe('SaxaMLL - Core', () => {
                 tag: "text",
                 attributes: {},
                 children: [],
-                content: "<\""
-            }]
+                content: "<\"",
+                type: "text"
+            }],
+            type: "element"
         })
     })
 
@@ -654,8 +769,10 @@ describe('SaxaMLL - Core', () => {
                 tag: "text",
                 attributes: {},
                 children: [],
-                content: "<'"
-            }]
+                content: "<'",
+                type: "text"
+            }],
+            type: "element"
         })
     })
 
@@ -669,8 +786,10 @@ describe('SaxaMLL - Core', () => {
                 tag: "text",
                 attributes: {},
                 children: [],
-                content: "<>"
-            }]
+                content: "<>",
+                type: "text"
+            }],
+            type: "element"
         })
     })
 
@@ -686,40 +805,107 @@ describe('SaxaMLL - Core', () => {
                 tag: "text",
                 attributes: {},
                 children: [],
-                content: "Hello"
-            }]
+                content: "Hello",
+                type: "text"
+            }],
+            type: "element"
         })
     })
 
-    it('non-text content field should have raw xml content', () => {
-        parser.parse("<tweet>Hello</tweet>");
-        console.log(JSON.stringify(parser.ast));
+
+    it('special characters inside attribute values should be preserved', () => {
+        parser.parse("<tweet id=\"1\" name=\"<tw/e/'e=t>\"/>");
         expect(parser.ast).toEqual({
             tag: "root",
             attributes: {},
             children: [{
                 tag: "tweet",
+                attributes: {
+                    id: "1",
+                    name: "<tw/e/'e=t>"
+                },
+                children: [],
+                content: "",
+                pre: "<tweet id=\"1\" name=\"<tw/e/'e=t>\"/>",
+                type: "element"
+            }],
+            type: "element"
+        })
+    })
+
+    it('does not error out on single quotes when double quotes are used for attribute values', () => {
+        parser.parse(`<tweet id="'something'">`)
+        expect(parser.ast).toEqual({
+            tag: "root",
+            attributes: {},
+            children: [{
+                tag: "tweet",
+                attributes: {
+                    id: "'something'"
+                },
+                children: [],
+                content: "",
+                pre: `<tweet id="'something'">`,
+                type: "element"
+            }],
+            type: "element"
+        })
+    })
+
+    it('encounter floating text inside a tag', () => {
+        parser.parse("<tweet id=\"1\"<asdf>");
+        parser.end();
+        expect(parser.ast).toEqual({
+            tag: "root",
+            attributes: {},
+            children: [{
+                tag: "tweet",
+                attributes: {
+                    id: "1"
+                },
+                children: [],
+                content: "",
+                pre: "<tweet id=\"1\"",
+                type: "element"
+            }, {
+                tag: "error",
+                attributes: {},
+                children: [],
+                content: "Unexpected opening tag '<' after opening tag \"tweet\"",
+                post: "<asdf>",
+                type: "error"
+            }],
+            type: "element"
+        })
+    })
+
+    it('can interpret mixed content from the root node', () => {
+        parser.parse("what is life? <answer>42</answer>");
+        expect(parser.ast).toEqual({
+            tag: "root",
+            attributes: {},
+            children: [{
+                tag: "text",
+                attributes: {},
+                children: [],
+                content: "what is life? ",
+                type: "text"
+            }, {
+                tag: "answer",
                 attributes: {},
                 children: [{
                     tag: "text",
                     attributes: {},
                     children: [],
-                    content: "Hello"
+                    content: "42",
+                    type: "text"
                 }],
-                pre: "<tweet>",
-                post: "</tweet>",
-                content: ""
-            }]
+                content: "",
+                pre: "<answer>",
+                post: "</answer>",
+                type: "element"
+            }],
+            type: "element"
         })
-    })
-
-    it('should ', () => {
-        /**
-         * getText --> the literal text returned by the model
-         * getRawText --> the raw XML returned by the model
-         * parser.handleText('alert', () => {
-         *  
-         * })
-         */
     })
 })

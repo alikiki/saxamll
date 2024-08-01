@@ -2,14 +2,17 @@ import { ParserState } from "./state";
 import { XMLNode } from "../types/index";
 import SaxaMLLExecutor from "./executor";
 import SaxaMLLParserContextManager from "./contextManager";
+import { ParserError } from "./error";
 
 export default class SaxaMLLParserStateManager {
     private _state: ParserState = ParserState.IDLE;
-    private _ast: XMLNode = { tag: "root", attributes: {}, children: [] };
+    private _ast: XMLNode = { tag: "root", attributes: {}, children: [], type: "element" };
     private _stack: { node: XMLNode; state: ParserState }[] = [{ node: this._ast, state: ParserState.IDLE }];
 
     public executor: SaxaMLLExecutor;
     contextManager: SaxaMLLParserContextManager;
+
+    public _error: ParserError | null = null;
 
     constructor(contextManager: SaxaMLLParserContextManager, executor: SaxaMLLExecutor) {
         this.executor = executor;
@@ -26,6 +29,14 @@ export default class SaxaMLLParserStateManager {
 
     public get state() {
         return this._state;
+    }
+
+    public get error() {
+        return this._error;
+    }
+
+    public setError(error: ParserError) {
+        this._error = error;
     }
 
     public transition(state: ParserState) {
@@ -61,12 +72,14 @@ export default class SaxaMLLParserStateManager {
             }
 
             this.contextManager.setTagName("error");
+            this.contextManager.setNodeType("error");
 
             // Commit the error node
             this.commitChild();
 
             // Transition to error state
             this.transition(ParserState.ERROR);
+            this.setError(ParserError.BAD_CLOSE_TAG);
 
             // TODO: emit an error message
             return;

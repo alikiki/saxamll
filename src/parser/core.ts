@@ -2,6 +2,7 @@ import { ParserState } from "./state";
 import SaxaMLLExecutor from "./executor";
 import SaxaMLLParserContextManager from "./contextManager";
 import SaxaMLLParserStateManager from "./stateManager";
+import { ParserError } from "./error";
 
 export default class SaxaMLLParser {
     private buffer: string = "";
@@ -46,11 +47,47 @@ export default class SaxaMLLParser {
 
     // <
     private handleLessThan(c: string) {
-        this.stateManager.transition(ParserState.OPENTAG);
+        switch (this.state) {
+            case ParserState.ATTRVALUEREADY:
+            case ParserState.ATTRKEY:
+            case ParserState.OPENTAG:
+                // Commit whatever node has been populated so far
+                const currentChild = this.contextManager.currChildNode;
+
+                this.stateManager.commitChild();
+
+                // Enter an error state 
+                this.stateManager.setError(ParserError.UNEXPECTED_TOKEN);
+                this.stateManager.transition(ParserState.ERROR);
+
+                this.contextManager.setTagName("error");
+                this.contextManager.setNodeType("error");
+                this.contextManager.addToPost(c);
+                this.contextManager.setContent(`Unexpected opening tag '<' after opening tag "${currentChild.tag}"`);
+                break;
+            case ParserState.ATTRVALUE:
+                this.contextManager.addToPre(c);
+                this.contextManager.addToAttrValue(c);
+                break;
+            default:
+                this.stateManager.transition(ParserState.OPENTAG);
+        }
     }
     // >
     private handleGreaterThan(c: string) {
         switch (this.state) {
+            case ParserState.ERROR:
+                switch (this.stateManager.error) {
+                    case ParserError.UNEXPECTED_TOKEN:
+                        this.contextManager.addToPost(c);
+                    default:
+                        break;
+                }
+                break;
+            case ParserState.ATTRVALUE:
+                this.contextManager.addToPre(c);
+                this.contextManager.addToAttrValue(c);
+                break;
             case ParserState.ATTRKEY:
             case ParserState.TAGNAME:
                 this.contextManager.addToPre(c);
@@ -72,6 +109,7 @@ export default class SaxaMLLParser {
             case ParserState.OPENTAG:
                 this.stateManager.transition(ParserState.TEXT);
                 this.contextManager.setTagName("text");
+                this.contextManager.setNodeType("text");
                 this.contextManager.addToContent("<")
                 this.contextManager.addToContent(c);
                 break;
@@ -86,6 +124,18 @@ export default class SaxaMLLParser {
     // /
     private handleForwardSlash(c: string) {
         switch (this.state) {
+            case ParserState.ERROR:
+                switch (this.stateManager.error) {
+                    case ParserError.UNEXPECTED_TOKEN:
+                        this.contextManager.addToPost(c);
+                    default:
+                        break;
+                }
+                break;
+            case ParserState.ATTRVALUE:
+                this.contextManager.addToPre(c);
+                this.contextManager.addToAttrValue(c);
+                break;
             case ParserState.ATTRKEY:
             case ParserState.TAGNAME:
                 this.contextManager.addToPre(c);
@@ -107,51 +157,54 @@ export default class SaxaMLLParser {
         }
     }
 
-    // '
-    private handleSingleQuotation(c: string) {
-        switch (this.state) {
-            case ParserState.OPENTAG:
-                this.stateManager.transition(ParserState.TEXT);
-                this.contextManager.setTagName("text");
-                this.contextManager.addToContent("<");
-                this.contextManager.addToContent(c);
-                break;
-            case ParserState.ATTRVALUEREADY:
-                this.stateManager.transition(ParserState.ATTRVALUE);
-                break;
-            case ParserState.TEXT:
-                this.contextManager.addToContent(c);
-                break;
-            case ParserState.ATTRVALUE:
-                // Push attribute to the current node
-                this.contextManager.addAttr();
-
-                // Wait for another attribute key
-                this.stateManager.transition(ParserState.ATTRKEY);
-                break;
-            default:
-                break;
-        }
-    }
-
-    // "
     private handleDoubleQuotation(c: string) {
+        this.handleQuotation(c);
+    }
+
+    private handleSingleQuotation(c: string) {
+        this.handleQuotation(c);
+    }
+
+
+    // ' or "
+    private handleQuotation(c: string) {
         switch (this.state) {
+            case ParserState.ERROR:
+                switch (this.stateManager.error) {
+                    case ParserError.UNEXPECTED_TOKEN:
+                        this.contextManager.addToPost(c);
+                    default:
+                        break;
+                }
+                break;
             case ParserState.OPENTAG:
                 this.stateManager.transition(ParserState.TEXT);
                 this.contextManager.setTagName("text");
+                this.contextManager.setNodeType("text");
                 this.contextManager.addToContent("<");
                 this.contextManager.addToContent(c);
                 break;
             case ParserState.ATTRVALUEREADY:
+                this.contextManager.addToPre(c);
+                this.contextManager.setQuoteUsedForAttrValue(c);
                 this.stateManager.transition(ParserState.ATTRVALUE);
                 break;
             case ParserState.TEXT:
                 this.contextManager.addToContent(c);
                 break;
             case ParserState.ATTRVALUE:
+                this.contextManager.addToPre(c);
+
+                // Don't close the attribute if the quote used for the value is different
+                if (c !== this.contextManager.currQuoteUsedForAttrValue) {
+                    this.contextManager.addToAttrValue(c);
+                    break;
+                };
+
                 // Push attribute to the current node
                 this.contextManager.addAttr();
+
+                this.contextManager.clearQuoteUsedForAttrValue();
 
                 // Wait for another attribute key
                 this.stateManager.transition(ParserState.ATTRKEY);
@@ -160,12 +213,26 @@ export default class SaxaMLLParser {
                 break;
         }
     }
+
 
     // =
     private handleEqualSign(c: string) {
         switch (this.state) {
+            case ParserState.ERROR:
+                switch (this.stateManager.error) {
+                    case ParserError.UNEXPECTED_TOKEN:
+                        this.contextManager.addToPost(c);
+                    default:
+                        break;
+                }
+                break;
             case ParserState.ATTRKEY:
+                this.contextManager.addToPre(c);
                 this.stateManager.transition(ParserState.ATTRVALUEREADY);
+                break;
+            case ParserState.ATTRVALUE:
+                this.contextManager.addToPre(c);
+                this.contextManager.addToAttrValue(c);
                 break;
             case ParserState.TEXT:
                 this.contextManager.addToContent(c);
@@ -178,10 +245,24 @@ export default class SaxaMLLParser {
     // Space
     private handleSpace(c: string) {
         switch (this.state) {
+            case ParserState.ERROR:
+                switch (this.stateManager.error) {
+                    case ParserError.UNEXPECTED_TOKEN:
+                        this.contextManager.addToPost(c);
+                    default:
+                        break;
+                }
+                break;
+            case ParserState.ATTRVALUEREADY:
+            case ParserState.ATTRKEY:
+                this.contextManager.addToPre(c);
+                break;
             case ParserState.ATTRVALUE:
+                this.contextManager.addToPre(c);
                 this.contextManager.addToAttrValue(c);
                 break;
             case ParserState.TAGNAME:
+                this.contextManager.addToPre(c);
                 this.stateManager.transition(ParserState.ATTRKEY);
                 break;
             case ParserState.TEXT:
@@ -190,6 +271,7 @@ export default class SaxaMLLParser {
             case ParserState.OPENTAG:
                 this.stateManager.transition(ParserState.TEXT);
                 this.contextManager.setTagName("text");
+                this.contextManager.setNodeType("text");
                 this.contextManager.addToContent("<");
                 this.contextManager.addToContent(c);
                 break;
@@ -211,6 +293,21 @@ export default class SaxaMLLParser {
     // Default
     private handleDefault(c: string) {
         switch (this.state) {
+            case ParserState.ERROR:
+                switch (this.stateManager.error) {
+                    case ParserError.UNEXPECTED_TOKEN:
+                        this.contextManager.addToPost(c);
+                        break;
+                    case ParserError.BAD_CLOSE_TAG:
+                        this.stateManager.transition(ParserState.TEXT);
+                        this.contextManager.setTagName("text");
+                        this.contextManager.setNodeType("text");
+                        this.contextManager.addToContent(c);
+                        break;
+                    default:
+                        break;
+                }
+                break;
             case ParserState.TAGNAME:
                 this.contextManager.addToPre(c);
                 this.contextManager.addToTagName(c);
@@ -228,11 +325,11 @@ export default class SaxaMLLParser {
                 this.contextManager.addToPost(c);
                 this.contextManager.addToTagName(c);
                 break;
-            case ParserState.ERROR:
             case ParserState.IDLE:
             case ParserState.OPEN:
                 this.stateManager.transition(ParserState.TEXT);
                 this.contextManager.setTagName("text");
+                this.contextManager.setNodeType("text");
                 this.contextManager.addToContent(c);
                 break;
             case ParserState.TEXT:
@@ -243,7 +340,7 @@ export default class SaxaMLLParser {
                 this.contextManager.addToAttrKey(c);
                 break;
             case ParserState.ATTRVALUE:
-                this.contextManager.addToPost(c);
+                this.contextManager.addToPre(c);
                 this.contextManager.addToAttrValue(c);
                 break;
             default:

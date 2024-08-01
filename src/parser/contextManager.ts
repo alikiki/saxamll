@@ -2,9 +2,10 @@ import { XMLNode } from "../types/index";
 import SaxaMLLExecutor from "./executor";
 
 export default class SaxaMLLParserContextManager {
-    _currChildNode: XMLNode = { tag: "", attributes: {}, children: [], content: "" };
+    _currChildNode: XMLNode = { tag: "", attributes: {}, children: [], content: "", type: "element" };
     _currAttrKey: string = "";
     _currAttrValue: string = "";
+    _currQuoteUsedForAttrValue: string = "";
 
     public executor: SaxaMLLExecutor;
 
@@ -14,6 +15,10 @@ export default class SaxaMLLParserContextManager {
 
     public setExecutor(executor: SaxaMLLExecutor) {
         this.executor = executor;
+    }
+
+    public setNodeType(type: "text" | "element" | "error") {
+        this._currChildNode.type = type;
     }
 
     public clearContext() {
@@ -82,7 +87,7 @@ export default class SaxaMLLParserContextManager {
         this._currChildNode.tag = s;
     }
     public clearChildNode() {
-        this._currChildNode = { tag: "", attributes: {}, children: [], content: "" };
+        this._currChildNode = { tag: "", attributes: {}, children: [], content: "", type: "element" };
     }
 
     // Attributes
@@ -123,4 +128,22 @@ export default class SaxaMLLParserContextManager {
     public clearAttrValue() {
         this._currAttrValue = "";
     }
+
+    public resetNodeType() {
+        this._currChildNode.type = "element";
+    }
+
+    public get currQuoteUsedForAttrValue() {
+        return this._currQuoteUsedForAttrValue;
+    }
+
+    public setQuoteUsedForAttrValue(s: string) {
+        this._currQuoteUsedForAttrValue = s;
+    }
+
+    public clearQuoteUsedForAttrValue() {
+        this._currQuoteUsedForAttrValue = "";
+    }
+
+
 }
