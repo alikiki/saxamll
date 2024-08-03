@@ -31,8 +31,7 @@ export const simple_classification = () => {
      * 
      * Append this to your system prompt.
      */
-    const classificationPrompt = classificationTag.getPrompt();
-
+    const classificationPrompt = classificationTag.prompt;
 
     // On the parser side
     const saxParser = new SaxaMLLParser();

@@ -31,7 +31,7 @@ export const simple_async_classification = async () => {
      * 
      * Append this to your system prompt.
      */
-    const classificationPrompt = classificationTag.getPrompt();
+    const classificationPrompt = classificationTag.prompt;
 
 
     // On the parser side

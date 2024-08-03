@@ -82,8 +82,6 @@ export default class SaxaMLLParserStateManager {
             this.transition(ParserState.ERROR);
             this.setError(ParserError.BAD_CLOSE_TAG);
 
-            console.log("Error", this.error);
-
             // TODO: emit an error message
             return;
         }
@@ -157,12 +155,6 @@ export default class SaxaMLLParserStateManager {
 
     private _addChild(child: XMLNode) {
         this._stack[this._stack.length - 1].node.children.push(child);
-    }
-    private _replaceChild(child: XMLNode) {
-        const children = this._stack[this._stack.length - 1].node.children;
-
-        this._stack[this._stack.length - 1].node.children = children.slice(0, -1);
-        this._addChild(child);
     }
     private _push(node: XMLNode) {
         this._stack.push({ node, state: this._state });

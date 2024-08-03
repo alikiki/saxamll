@@ -972,8 +972,6 @@ describe('SaxaMLL - Core', () => {
             parser.update();
         }
 
-        console.log(JSON.stringify(parser.ast));
-
         expect(parser.ast).toEqual({
             tag: "root",
             attributes: {},

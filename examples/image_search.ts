@@ -10,7 +10,12 @@ export const image_search = async () => {
     const imageSearchTag = new XMLNodeDescription({
         tag: "imageSearch",
         selfClosing: true,
-        description: "Search for an image given a keyword. The `query` attribute should contain the keyword. The `onSuccess` attribute should contain text that is displayed when the image is found. The `onFailure` attribute should contain text that is displayed when the image is not found."
+        description: "Search for an image given a keyword.",
+        attributes: {
+            query: "The keyword to search for",
+            onSuccess: "Text to display when the image is found",
+            onFailure: "Text to display when the image is not found"
+        }
     })
 
 
@@ -24,7 +29,6 @@ export const image_search = async () => {
             output: "<imageSearch query='muhammad ali' onSuccess='Here is a photo of Muhammad Ali.' onFailure='Unfortunately, no photos of Muhammad Ali are available in the database.'/>"
         },
     ])
-
 
 
     // On the parser side:

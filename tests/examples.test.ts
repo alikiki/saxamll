@@ -1,6 +1,4 @@
-import { beforeEach, describe, it, expect } from 'vitest';
-import { getText, SaxaMLLParser, XMLNodeDescription } from "../src";
-import { XMLNode } from '../src/types';
+import { describe, it, expect } from 'vitest';
 import { simple_classification } from '../examples/simple_classification';
 import { simple_async_classification } from '../examples/simple_async_classification';
 import { image_search } from '../examples/image_search';
