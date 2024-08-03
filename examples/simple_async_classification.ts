@@ -6,7 +6,7 @@ import { getText, SaxaMLLParser, XMLNodeDescription } from "../src";
 import { XMLNode } from "../src/types";
 
 // On the generator side
-export const simple_classification = () => {
+export const simple_async_classification = async () => {
     const classificationTag = new XMLNodeDescription({
         tag: "classification",
         description: "Put 'positive' if the text inside '<sentence></sentence> tags is positive. Put 'negative' if the text is negative"
@@ -39,13 +39,25 @@ export const simple_classification = () => {
 
     // When </classification> is encountered, we print the text inside the <classification> tags.
     let response;
-    saxParser.executor.upon('tagClose').for(classificationTag).do((node: XMLNode) => {
-        response = getText(node);
+    let promises: Promise<string>[] = [];
+    saxParser.executor.upon('tagClose').for(classificationTag).do(async (node: XMLNode) => {
+        // Simulate timeout for async
+        // Save the promise and the result into response
+        const result = new Promise<string>((resolve) => {
+            setTimeout(() => {
+                response = getText(node);
+                resolve(response);
+            }, 200);
+        });
+
+        promises.push(result);
     });
 
     // Parse the input
     saxParser.parse("<classification>positive</classification>");
     saxParser.end();
+
+    await Promise.all(promises);
 
     return response;
 }

@@ -36,6 +36,7 @@ export default class SaxaMLLParserStateManager {
     }
 
     public setError(error: ParserError) {
+        this.executor.emit("error", error);
         this._error = error;
     }
 
@@ -81,6 +82,8 @@ export default class SaxaMLLParserStateManager {
             this.transition(ParserState.ERROR);
             this.setError(ParserError.BAD_CLOSE_TAG);
 
+            console.log("Error", this.error);
+
             // TODO: emit an error message
             return;
         }
@@ -88,9 +91,10 @@ export default class SaxaMLLParserStateManager {
         // Add the post content to the current top of stack
         currentTopOfStack.node.post = currentChildNode.post;
 
-        const topOfStack = this._popAndPeek();
-        const modifiedTagName = `tagClose:${topOfStack.node.tag}`;
-        this.executor.emit(modifiedTagName, topOfStack.node);
+        const popped = this._pop();
+        const topOfStack = this._peek();
+        const modifiedTagName = `tagClose:${popped.node.tag}`;
+        this.executor.emit(modifiedTagName, popped.node);
 
         this.contextManager.clearChildNode();
         this.transition(topOfStack.state);
@@ -106,9 +110,10 @@ export default class SaxaMLLParserStateManager {
             return;
         }
 
-        const topOfStack = this._popAndPeek();
-        const modifiedTagName = `tagClose:${topOfStack.node.tag}`;
-        this.executor.emit(modifiedTagName, topOfStack.node);
+        const popped = this._pop();
+        const topOfStack = this._peek();
+        const modifiedTagName = `tagClose:${popped.node.tag}`;
+        this.executor.emit(modifiedTagName, popped.node);
 
         this.contextManager.clearChildNode();
         this.transition(topOfStack.state);
@@ -124,11 +129,9 @@ export default class SaxaMLLParserStateManager {
         this.contextManager.clearChildNode();
     }
 
-    public flush() {
+    public flushAll() {
         // Push the last child node
         this.commitChild();
-
-        console.log(this.ast);
 
         // Pop until the stack is empty
         while (this._stack.length > 1) {
@@ -136,8 +139,30 @@ export default class SaxaMLLParserStateManager {
         }
     }
 
+    public flush() {
+        // FIX:
+        // I only really want to flush if it's a text node
+        // main reason being that if it's in the middle of parsing an element node,
+        // then the tree representation gets fucked up
+        // I could implement diffs, but it's annoying... but I probably should.
+        const node = this.contextManager.currChildNode;
+        if (node.type === "text") {
+            // commit the current child
+            this.commitChild();
+        }
+        const top = this._peek().node;
+        this.executor.emit("update", top);
+        this.executor.emit(`update:${top.tag}`, top);
+    }
+
     private _addChild(child: XMLNode) {
         this._stack[this._stack.length - 1].node.children.push(child);
+    }
+    private _replaceChild(child: XMLNode) {
+        const children = this._stack[this._stack.length - 1].node.children;
+
+        this._stack[this._stack.length - 1].node.children = children.slice(0, -1);
+        this._addChild(child);
     }
     private _push(node: XMLNode) {
         this._stack.push({ node, state: this._state });
@@ -148,10 +173,5 @@ export default class SaxaMLLParserStateManager {
 
     private _peek() {
         return this._stack[this._stack.length - 1];
-    }
-
-    private _popAndPeek() {
-        this._pop();
-        return this._peek();
     }
 }

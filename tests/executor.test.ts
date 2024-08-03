@@ -2,15 +2,6 @@ import { beforeEach, describe, it, expect } from 'vitest';
 import { SaxaMLLExecutor, ExecutionHandlerBuilder, SaxaMLLParser } from "../src";
 
 describe('SaxaMLL - ExecutionHandler', () => {
-    it('should build correctly', () => {
-        const executor = new SaxaMLLExecutor();
-        const handler = new ExecutionHandlerBuilder(executor, 'tagClose');
-
-        handler.for('random').inside('a', 'b', 'c').do((node) => { return Promise.resolve("") });
-
-        expect(handler.tag).toBe('random');
-        expect(handler.scope).toEqual(['a', 'b', 'c']);
-    })
     it('should build without scope', () => {
         const executor = new SaxaMLLExecutor();
         const handler = new ExecutionHandlerBuilder(executor, 'tagClose');
@@ -19,176 +10,36 @@ describe('SaxaMLL - ExecutionHandler', () => {
 
         expect(handler.tag).toBe('random');
         expect(handler.scope.length).toBe(0);
+        expect(handler.getEventName()).toBe('tagClose:random');
     })
 })
 
-describe('SaxaMLL - Execution', () => {
-    it('simple execution', async () => {
+describe('SaxaMLL - Executor', () => {
+    it('should build event name', () => {
         const executor = new SaxaMLLExecutor();
-        const tagEvent = executor.on('tagOpen').for('random').do((node) => {
-            return Promise.resolve(node.tag);
-        });
+        const eventName = executor.buildEventName('tagClose', 'random');
 
-        executor.emit(tagEvent.getEventName(), { tag: 'random' });
-        const result = await executor.getResults('tagOpen', 'random', []);
-
-        expect(result).toBe('random');
+        expect(eventName).toBe('tagClose:random');
     })
 
-    it('execution with scope', async () => {
+    it('should add handler', () => {
         const executor = new SaxaMLLExecutor();
-        const tagEvent = executor.on('tagOpen').for('random').inside('a', 'b', 'c').do((node) => {
-            return Promise.resolve(node.tag);
-        });
+        const handler = new ExecutionHandlerBuilder(executor, 'tagClose');
 
-        executor.emit(tagEvent.getEventName(), { tag: 'random' });
-        const result = await executor.getResults('tagOpen', 'random', ['a', 'b', 'c']);
+        handler.for('random').do((node) => { return Promise.resolve("") });
 
-        expect(result).toBe('random');
+        expect(executor.listeners('tagClose:random').length).toBe(1);
     })
 
-    it('execution with partial scope', async () => {
+    it('should emit event', async () => {
         const executor = new SaxaMLLExecutor();
+        const handler = new ExecutionHandlerBuilder(executor, 'tagClose');
 
-        // expose a collector
-        // e.g. const contentBlockAccumulator = new Accumulator();
-        const contentTagEventAccumulate = (node) => {
-            const responses: Promise<string>[] = [];
-            for (let n of node.children) {
-                console.log(n);
-                switch (n.tag) {
-                    case 'text':
-                        // Put all the shit in the accumulator
-                        responses.push(Promise.resolve(n.content!));
-                        break;
-                    case 'image':
-                        const image = new Promise<string>((resolve) => {
-                            setTimeout(() => {
-                                resolve(n.tag);
-                            }, 1000);
-                        });
-                        responses.push(image);
-                        break;
-                }
-            }
+        let result;
+        handler.for('random').do((node) => { result = "Hello"; return Promise.resolve("Hello") });
 
-            return Promise.all(responses);
-        }
+        await executor.emit('tagClose:random', {});
 
-        const contentBlockEvent = executor.on('tagClose').for('contentBlock').do(async (node) => {
-            console.log(node);
-            let response = "Here are the contents for today. ";
-            for (let n of node.children) {
-                console.log(n);
-                switch (n.tag) {
-                    case 'content':
-                        const r = await contentTagEventAccumulate(n);
-                        response += r.join("");
-                        break;
-                }
-            }
-
-            return response;
-        })
-
-
-
-        executor.emit(
-            contentBlockEvent.getEventName(),
-            {
-                tag: "contentBlock",
-                attributes: {},
-                children: [
-                    {
-                        tag: "content",
-                        attributes: {},
-                        children: [
-                            {
-                                tag: "image",
-                                attributes: {},
-                                children: [],
-                                content: ""
-                            },
-                            {
-                                tag: "text",
-                                attributes: {},
-                                children: [],
-                                content: "Hello world"
-                            }
-                        ]
-                    },
-                    {
-                        tag: "content",
-                        attributes: {},
-                        children: [
-                            {
-                                tag: "image",
-                                attributes: {},
-                                children: [],
-                                content: ""
-                            },
-                            {
-                                tag: "text",
-                                attributes: {},
-                                children: [],
-                                content: "Hello world, part 2"
-                            }
-                        ]
-                    }
-                ]
-            }
-        );
-
-        const result = await executor.getResults('tagClose', 'contentBlock', []);
-
-        expect(result).toEqual("Here are the contents for today. imageHello worldimageHello world, part 2");
-    })
-
-    it('', () => {
-        const executor = new SaxaMLLExecutor();
-
-        const tagEventResponse = await executor.on('tagOpen').for('random').do((node) => {
-            return Promise.resolve(node.tag);
-        });
-
-        console.log(tagEventResponse);
-    })
-
-    it('', () => {
-        const parser = new SaxaMLLParser();
-
-        parser.executor.on('tagOpen').for('random').do(async (node) => {
-            const currentBatch = parser.executor.get('something');
-            const apiResponse = await fetch('https://api.example.com/v1/random');
-            const textDelta = await apiResponse.text();
-            parser.executor.set('something', textDelta);
-        });
-
-        const finalResponse = [];
-
-        function userDefinedHandleFn(data) {
-            const currentResults = parser.executor.get('something');
-            const textDelta = data + currentResults;
-
-            finalResponse.push(textDelta);
-        }
-
-
-
-        while (true) {
-            parser.parse(textDelta);
-
-            userDefinedHandleFn(parser.executor.flush());
-        }
-
-        console.log(finalResponse);
-
-
-    })
-
-    it('', () => {
-        const executor = new SaxaMLLExecutor();
-
-        const
+        expect(result).toBe('Hello');
     })
 })

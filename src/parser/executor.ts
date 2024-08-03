@@ -1,9 +1,9 @@
-import { EventEmitter } from "eventemitter3";
 import { XMLNode } from "../types/index";
 import XMLNodeDescription from "../node/index";
+import EventEmitter from "../../node_modules/eventemitter3/index";
 
-type SaxaMLLEventType = "tagOpen" | "tagClose";
-type SaxaMLLEventCallback = (node: XMLNode) => Promise<string>;
+type SaxaMLLEventType = "tagOpen" | "tagClose" | "update";
+type SaxaMLLEventCallback = (node: XMLNode) => any;
 
 class ExecutionHandlerBuilder {
     public executor: SaxaMLLExecutor;
@@ -21,8 +21,12 @@ class ExecutionHandlerBuilder {
         return new ExecutionHandlerBuilderWithFor(this);
     }
 
+    public do(callback: SaxaMLLEventCallback) {
+        this.executor.addHandler(this.eventType, "", callback);
+    }
+
     public getEventName(): string {
-        return this.executor.buildEventName(this.eventType, this.tag!, this.scope);
+        return this.executor.buildEventName(this.eventType, this.tag!);
     }
 }
 
@@ -33,13 +37,8 @@ class ExecutionHandlerBuilderWithFor {
         this.builder = builder;
     }
 
-    public inside(...scope: string[]): ExecutionHandlerBuilderWithForAndInside {
-        this.builder.scope = scope;
-        return new ExecutionHandlerBuilderWithForAndInside(this.builder);
-    }
-
     public do(callback: SaxaMLLEventCallback) {
-        this.builder.executor.addHandler(this.builder.eventType, this.builder.tag!, this.builder.scope, callback);
+        this.builder.executor.addHandler(this.builder.eventType, this.builder.tag!, callback);
 
         return this;
     }
@@ -49,74 +48,30 @@ class ExecutionHandlerBuilderWithFor {
     }
 }
 
-class ExecutionHandlerBuilderWithForAndInside {
-    private builder: ExecutionHandlerBuilder;
-
-    constructor(builder: ExecutionHandlerBuilder) {
-        this.builder = builder;
-    }
-
-    public do(callback: SaxaMLLEventCallback) {
-        this.builder.executor.addHandler(this.builder.eventType, this.builder.tag!, this.builder.scope, callback);
-
-        return this;
-    }
-
-    public getEventName(): string {
-        return this.builder.getEventName();
-    }
-}
 
 
 export default class SaxaMLLExecutor extends EventEmitter {
-    private executionResults: Record<string, Promise<string>> = {};
-
     constructor() {
         super();
     }
 
-    public buildEventName(event: SaxaMLLEventType, tag: XMLNodeDescription | string, scope: string[]): string {
-        return `${event}:${scope.join(':')}:${tag instanceof XMLNodeDescription ? tag.tag : tag}`
+    public buildEventName(event: SaxaMLLEventType, tag: XMLNodeDescription | string): string {
+        const modifiedTag = tag instanceof XMLNodeDescription ? tag.tag : tag;
+        if (modifiedTag.length === 0) return event;
+
+        return `${event}:${modifiedTag}`;
     }
 
-    public on(event: SaxaMLLEventType) {
+
+    public upon(event: SaxaMLLEventType) {
         return new ExecutionHandlerBuilder(this, event);
     }
 
 
-    public addHandler(event: SaxaMLLEventType, tag: XMLNodeDescription | string, scope: string[], callback: SaxaMLLEventCallback) {
-        const eventName = this.buildEventName(event, tag, scope);
+    public addHandler(event: SaxaMLLEventType, tag: XMLNodeDescription | string, callback: SaxaMLLEventCallback) {
+        const eventName = this.buildEventName(event, tag);
 
-        const wrapperCallback = (node: XMLNode) => {
-            const eventName = this.buildEventName(event, tag, scope);
-            const eventResults = callback(node);
-            this.executionResults[eventName] = eventResults;
-        }
-
-        console.log(eventName);
-        super.on(eventName, wrapperCallback);
-    }
-
-    public getResults(event: SaxaMLLEventType, tag: XMLNodeDescription | string, scope: string[]): Promise<string> | null {
-        const eventName = this.buildEventName(event, tag, scope);
-        const eventResults = this.executionResults[eventName];
-
-        if (eventResults === undefined) {
-            return null;
-        }
-
-        return eventResults;
-    }
-
-    public putResults(event: SaxaMLLEventType, tag: XMLNodeDescription | string, scope: string[]): Promise<string> | null {
-        const eventName = this.buildEventName(event, tag, scope);
-        const eventResults = this.executionResults[eventName];
-
-        if (eventResults === undefined) {
-            return null;
-        }
-
-        return eventResults;
+        super.on(eventName, callback);
     }
 }
 

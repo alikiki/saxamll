@@ -109,9 +109,37 @@ describe('SaxaMLL - Utils', () => {
 
         parser.parse(input);
 
-        console.log(JSON.stringify(parser.ast));
+        const text = getRaw(parser.ast);
+        expect(text).toEqual(input);
+    })
+
+    it('should get raw XML even on error, unclosed', () => {
+        const input = `<tweet id="1"><text>Hello</tweet>`;
+        const parser = new SaxaMLLParser();
+
+        parser.parse(input);
 
         const text = getRaw(parser.ast);
         expect(text).toEqual(input);
+    })
+
+    it('should get raw XML even on error, unexpected', () => {
+        const input = `<tweet<something> hello my na:""="me">Hello</tweet>`;
+        const parser = new SaxaMLLParser();
+
+        parser.parse(input);
+
+        const text = getRaw(parser.ast);
+        expect(text).toEqual(input);
+    })
+
+    it('should get raw XML even on error, bad close', () => {
+        const input = `<tweet id="1">nothing else bro</text>`;
+        const parser = new SaxaMLLParser();
+
+        parser.parse(input);
+
+        const text = getRaw(parser.ast);
+        expect(text).toEqual
     })
 })

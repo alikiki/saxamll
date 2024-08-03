@@ -5,6 +5,10 @@ function getText(node: XMLNode): string {
         return node.content!;
     }
 
+    if (node.children === undefined) {
+        return "";
+    }
+
     let textCollector: string = "";
     for (const child of node.children) {
         textCollector += getText(child);
@@ -25,8 +29,6 @@ function getRaw(node: XMLNode): string {
     for (const child of node.children) {
         textCollector += getRaw(child);
     }
-
-    console.log(pre + textCollector + post);
 
     return pre + textCollector + post;
 

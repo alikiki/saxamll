@@ -1,54 +1,104 @@
 import { beforeEach, describe, it, expect } from 'vitest';
-import { SaxaMLLExecutor, SaxaMLLParser, ParserState, XMLNodeDescription } from "../src";
-import { getText } from '../src/utils';
+import { SaxaMLLExecutor, SaxaMLLParser, getText } from "../src";
 import { XMLNode } from '../src/types';
 
 describe('SaxaMLL - Integration', () => {
     it('should be read the contents of a single xml tag', () => {
         const parser = new SaxaMLLParser();
         let results = "";
-        parser.executor.addHandler('tagClose', 'tweet', (node: XMLNode) => {
+        const eventName = parser.executor.upon('tagClose').for('tweet').do((node: XMLNode) => {
             results = getText(node);
-        })
+        }).getEventName();
 
         parser.parse("<tweet>Hello</tweet>");
+        parser.end();
         expect(results).toBe("Hello");
     })
+
     it('should be able to interpret attributes on tagOpen', () => {
         const parser = new SaxaMLLParser();
         let results = "";
-        parser.executor.addHandler('tagOpen', 'tweet', (node: XMLNode) => {
+        parser.executor.upon('tagOpen').for('tweet').do((node: XMLNode) => {
             results = node.attributes.id;
         })
 
         parser.parse("<tweet id=\"1\">");
         expect(results).toBe("1");
     })
-    it.skip('', () => {
+
+    it('should be able to get updates', () => {
+        const textUpdates = [
+            "Hello",
+            "World"
+        ]
+
         const parser = new SaxaMLLParser();
         let results = "";
 
-        parser.executor.addHandler('tagOpen', 'response', (node: XMLNode) => {
-            results += getTextDelta(node);
+        parser.executor.upon('update').do((node: XMLNode) => {
+            results = getText(node);
         })
-        parser.executor.addHandler('tagClose', 'toReplaceWithImage', async (node: XMLNode) => {
-            const query = node.attributes.query;
-            const success = node.attributes.onSuccess;
-            const failure = node.attributes.onFailure;
 
-            const response = await fetch();
-            const data = await response.json();
+        parser.parse(textUpdates[0]);
+        parser.update();
+        expect(results).toBe(textUpdates[0]);
 
-            if (data.results.length > 0) {
-                results += success;
-            } else {
-                results += failure;
+        parser.parse(textUpdates[1]);
+        parser.update();
+        expect(results).toBe("HelloWorld");
+    })
+
+    it('should be able to get updates', () => {
+        const textUpdates = [
+            "Hello",
+            "World"
+        ]
+
+        const parser = new SaxaMLLParser();
+        let results = "";
+
+        parser.executor.upon('update').do((node: XMLNode) => {
+            if (node.tag === "tweet") {
+                results = getText(node);
             }
         })
 
-        parser.parse("<response>Barack Obama is the 44th US president.<toReplaceWithImage onSuccess='Here is a photo of Obama:', onFailure='' query='portrait of obama'><toReplaceWithImage></response>");
+        parser.parse("<tweet>Hel");
+        parser.update();
+        expect(results).toBe("Hel");
 
-        // assuming that the API call is successful
-        expect(results).toBe("Barack Obama is the 44th US president. Here is a photo of Obama:");
+        parser.parse("lo</");
+        parser.update();
+        expect(results).toBe("Hello");
+
+        parser.parse("tweet>");
+        parser.update();
+        expect(results).toBe("Hello");
+    })
+
+    it('should be able to get updates on a specific tag', () => {
+        const textUpdates = [
+            "Hello",
+            "World"
+        ]
+
+        const parser = new SaxaMLLParser();
+        let results = "";
+
+        parser.executor.upon('update').for('tweet').do((node: XMLNode) => {
+            results = getText(node);
+        })
+
+        parser.parse("<tweet>Hel");
+        parser.update();
+        expect(results).toBe("Hel");
+
+        parser.parse("lo</");
+        parser.update();
+        expect(results).toBe("Hello");
+
+        parser.parse("tweet>");
+        parser.update();
+        expect(results).toBe("Hello");
     })
 })

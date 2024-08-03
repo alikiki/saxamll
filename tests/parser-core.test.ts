@@ -908,4 +908,113 @@ describe('SaxaMLL - Core', () => {
             type: "element"
         })
     })
+
+    it('flushes text correctly', () => {
+        parser.parse("Hello");
+        parser.update();
+        parser.parse(" World");
+        parser.update();
+        expect(parser.ast).toEqual({
+            tag: "root",
+            attributes: {},
+            children: [{
+                tag: "text",
+                attributes: {},
+                children: [],
+                content: "Hello",
+                type: "text"
+            },
+            {
+                tag: "text",
+                attributes: {},
+                children: [],
+                content: " World",
+                type: "text"
+            }],
+            type: "element"
+        })
+    })
+
+    it('does not flush in the middle of parsing a tag', () => {
+        parser.parse("<question");
+        parser.update();
+
+        parser.parse(" id=\"1\">");
+        parser.update();
+
+        expect(parser.ast).toEqual({
+            tag: "root",
+            attributes: {},
+            children: [{
+                tag: "question",
+                attributes: {
+                    id: "1"
+                },
+                children: [],
+                content: "",
+                pre: "<question id=\"1\">",
+                type: "element"
+            }],
+            type: "element"
+        })
+    })
+
+    it('flushes mixed content correctly', () => {
+        const textUpdates = [
+            "Hell",
+            "o <question id=\"",
+            "1\">What is",
+            " life?"
+        ]
+
+        for (const text of textUpdates) {
+            parser.parse(text);
+            parser.update();
+        }
+
+        console.log(JSON.stringify(parser.ast));
+
+        expect(parser.ast).toEqual({
+            tag: "root",
+            attributes: {},
+            children: [{
+                tag: "text",
+                attributes: {},
+                children: [],
+                content: "Hell",
+                type: "text"
+            },
+            {
+                tag: "text",
+                attributes: {},
+                children: [],
+                content: "o ",
+                type: "text"
+            },
+            {
+                tag: "question",
+                attributes: {
+                    id: "1"
+                },
+                children: [{
+                    tag: "text",
+                    attributes: {},
+                    children: [],
+                    content: "What is",
+                    type: "text"
+                },
+                {
+                    tag: "text",
+                    attributes: {},
+                    children: [],
+                    content: " life?",
+                    type: "text"
+                }],
+                content: "",
+                pre: "<question id=\"1\">",
+                type: "element"
+            }],
+            type: "element"
+        })
+    })
 })
