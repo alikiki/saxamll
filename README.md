@@ -1,93 +1,83 @@
 # saxaMLL
 
-`saxaMLL` is a event-driven incremental SAX parser for your LLM interaction needs.
+`saxaMLL` is a event-driven incremental SAX parser for your LLM interaction/orchestration needs.
 
 ## Features
-- No frills: pure text-to-text parsing
+- No tool-calling APIs necessary
+- No frills - just pure text parsing
 - Prompt generator for your custom XML tags
 
 ## Get started
 
+Head over to the [docs](https://saxamll.neoj-studios.com/) for more information.
+
+### Installation
+
 ```
-import {SaxaMLLEmitter, SaxaMLLParser, getText, SaxaMLLGenerator} from 'saxamll';
+npm install saxamll
+```
 
-const sax = new SaxaMLLParser();
+### Example
 
-sax.emitter.addHandler('tagClose', 'question', (node) => {
-    const text = getText(node);
-    console.log(text);
-})
+```typescript
+import { getText, XMLNodeDescription, SaxaMLLParser } from "saxamll";
 
-
-/**
-* Returns the text in between <question></question> tags.
-* Example: 
-*   - Input: "<question>What's your name?</question>"
-*   - Output: "What's your name?"
+/*
+First, define an XML description.
 */
-handler.onTagClose('question', async (node) => {
-    const text = getText(node);
-    return Promise.resolve(text);
-})
-
-/**
- * Classify text
- * Example:
- *  - Input: "<sentenceToClassify>SVD is the swiss army knife of linear algebra</sentenceToClassify>"
- *  - Output: "<"
- */
-const prompt = "<instructions>You are to classify the text.</instructions><task><sentenceToClassify></sentenceToClassify></task>"
-const modifiedPrompt = SaxaMLLGenerator.augment(prompt);
-
-const classificationXML: new XMLNodeDescription({
-    description: "There are two classifications: `blue` and `red`.",
+const classificationTag = new XMLNodeDescription({
     tag: "classification",
-    attributes: {
-        optionA: "blue",
-        optionB: "red"
-    }
+    description: "Put 'positive' if the text inside '<sentence></sentence> tags is positive. Put 'negative' if the text is negative"
 })
-classificationXML.addExamples([
+
+classificationTag.setExamples([
     {
-        input: "",
-        expected: "<classification>something</classification>"
+        input: "<sentence>I'm eating lobsters and I'm so happy.</sentence>",
+        output: "<classification>positive</classification>"
     }
 ])
 
-sax.emitter.onTagClose(classificationXML, (node) => {
-    console.log(node.attributes.optionA)
-})
-
-
-/**
-* Returns text, depending on the results of an API.
-* Example:
-*   - Input: "<dataToCall query="barack obama image" onSuccess="Here is an image of Barack Obama: " onFailure="">"
-*   - Output: If successful: "Here is an image of Barack Obama: ...". If failure: "".
+/*
+This generates a description of the <classification> tags.
 */
+const classificationDescription = classificationTag.getPrompt();
 
-const dataToCall: XMLNodeDescription = {
-    tag: 'dataToCall',
-    description: "",
-    attributes: {
-        onSuccess: "",
-        onFailure: "",
-    }
+const saxParser = new SaxaMLLParser();
+
+/*
+When </classification> is encountered, we will save the text
+inside the <classification> tags inside `response`.
+*/
+let response;
+saxParser.executor.upon('tagClose').for(classificationTag).do((node: XMLNode) => {
+    response = getText(node);
+});
+
+
+/* 
+Parse the input all at once
+*/
+saxParser.parse("<classification>positive</classification>");
+console.log(response); // "positive"
+
+/*
+Or, parse in an online fashion
+*/
+const streamExample = [
+    "<class",
+    "ification",
+    ">",
+    "positive",
+    "</",
+    "classification",
+    ">"
+]
+    
+for (let delta of streamExample) {
+    saxParser.parse(delta);
 }
-
-// Strings work too!
-handler.onTagOpen('dataToCall', async (node) => {
-    const onSuccessText = node.onSuccess;
-    const onFailureText = node.onFailure;
-
-    const response = await fetch(...SOME_API...);
-    
-    if (response.status !== 200) return onFailureText;
-    
-    const responseText = await response.text;
-    const modifiedResponse = `${onSuccessText} ${responseText}`;
-})
+console.log(response); // "positive"
 ```
 
 ## Examples
-- [Lapin](https://lapin.hajeon.xyz/) uses SaxaMLL under-the-hood to create dyanmically updating threads.
+- [Lapin](https://lapin.hajeon.xyz/) uses SaxaMLL under-the-hood to create dynamic UI.
