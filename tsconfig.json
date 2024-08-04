@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    /* Visit https://aka.ms/tsconfig to read more about this file */
+
+    /* Projects */
+    "incremental": true,
+
+    /* Language and Environment */
+    "target": "es2020",
+
+    /* Modules */
+    "module": "esnext",
+    "baseUrl": "./",                                  /* Specify the base directory to resolve non-relative module names. */
+    "paths": {
+      "saxamll": ["src/index.ts", "dist/index.js"]
+    },
+    "outDir": "./dist",
+    "rootDir": "./src",
+    /* Specify an output folder for all emitted files. */
+    // "removeComments": true,                           /* Disable emitting comments. */
+    "noEmit": false,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    /* Ensure that casing is correct in imports. */
+
+    /* Type Checking */
+    "strict": true,
+    "skipLibCheck": true,
+  },
+  "include": ["src", "tests", "types"],
+  "exclude": ["node_modules", "**/*.test.ts"],
+  "references": [{
+    "path": "./tsconfig.node.json"
+  }]
+}
