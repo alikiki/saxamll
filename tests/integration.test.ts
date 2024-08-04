@@ -1,5 +1,5 @@
 import { beforeEach, describe, it, expect } from 'vitest';
-import { SaxaMLLExecutor, SaxaMLLParser, getText } from "../src";
+import { SaxaMLLExecutor, SaxaMLLParser, getText } from "saxamll";
 import { XMLNode } from '../src/types';
 
 describe('SaxaMLL - Integration', () => {

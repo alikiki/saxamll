@@ -2,7 +2,7 @@
  * Take actions depending on the XML tags encountered.
  */
 
-import { SaxaMLLParser, XMLNodeDescription } from "../src";
+import { SaxaMLLParser, XMLNodeDescription } from "saxamll";
 
 export const model_router = () => {
     const routerTag = new XMLNodeDescription({

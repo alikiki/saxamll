@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { XMLNodeDescription } from "../src";
+import { XMLNodeDescription } from "saxamll";
 
 describe('SaxaMLL - XMLNodeDescription', () => {
     describe('Constructor and basic properties', () => {

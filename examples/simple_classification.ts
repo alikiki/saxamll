@@ -2,7 +2,7 @@
  * Simple classification of text.
  */
 
-import { getText, SaxaMLLParser, XMLNodeDescription } from "../src";
+import { getText, SaxaMLLParser, XMLNodeDescription } from "saxamll";
 import { XMLNode } from "../src/types";
 
 // On the generator side

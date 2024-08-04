@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getText, getRaw, SaxaMLLParser } from '../src';
+import { getText, getRaw, SaxaMLLParser } from 'saxamll';
 import { XMLNode } from '../src/types';
 
 describe('SaxaMLL - Utils', () => {

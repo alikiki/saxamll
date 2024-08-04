@@ -1,5 +1,5 @@
 import { beforeEach, describe, it, expect } from 'vitest';
-import { SaxaMLLExecutor, ExecutionHandlerBuilder, SaxaMLLParser } from "../src";
+import { SaxaMLLExecutor, ExecutionHandlerBuilder } from "saxamll";
 
 describe('SaxaMLL - ExecutionHandler', () => {
     it('should build without scope', () => {

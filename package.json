@@ -5,9 +5,9 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc",
-    "test": "vitest",
-    "test:source": "vitest",
-    "test:build": "tsc "
+    "test:src": "vitest run",
+    "test:dist": "npm run build && vitest run --mode dist",
+    "test": "npm run test:src && npm run test:dist"
   },
   "keywords": [],
   "author": "",
@@ -17,6 +17,7 @@
     "@typescript-eslint/parser": "^7.16.1",
     "eslint": "^8.57.0",
     "typescript": "^5.5.3",
+    "vite-tsconfig-paths": "^4.3.2",
     "vitest": "^2.0.3"
   },
   "dependencies": {

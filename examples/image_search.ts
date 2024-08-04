@@ -2,9 +2,8 @@
  * Take actions depending on the XML tags encountered.
  */
 
-import { SaxaMLLParser, XMLNodeDescription } from "../src";
+import { SaxaMLLParser, XMLNodeDescription, getText } from "saxamll";
 import { XMLNode } from "../src/types";
-import { getText } from "../src";
 
 
 export const image_search = async () => {
