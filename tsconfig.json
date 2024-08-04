@@ -8,6 +8,9 @@
     /* Language and Environment */
     "target": "es2020",
 
+    "declaration": true,
+    "declarationMap": true,
+
     /* Modules */
     "module": "esnext",
     "baseUrl": "./",                                  /* Specify the base directory to resolve non-relative module names. */

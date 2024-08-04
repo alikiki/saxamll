@@ -1,0 +1,43 @@
+import { XMLNode } from "../types/index";
+import SaxaMLLExecutor from "./executor";
+export default class SaxaMLLParserContextManager {
+    _currChildNode: XMLNode;
+    _currAttrKey: string;
+    _currAttrValue: string;
+    _currQuoteUsedForAttrValue: string;
+    executor: SaxaMLLExecutor;
+    constructor(executor: SaxaMLLExecutor);
+    setExecutor(executor: SaxaMLLExecutor): void;
+    setNodeType(type: "text" | "element" | "error"): void;
+    clearContext(): void;
+    get currPre(): string | undefined;
+    get currPost(): string | undefined;
+    addToPre(s: string): void;
+    addToPost(s: string): void;
+    setPre(s: string): void;
+    setPost(s: string): void;
+    clearPre(): void;
+    clearPost(): void;
+    clearRaw(): void;
+    get currChildNode(): XMLNode;
+    isCurrChildEmpty(): boolean;
+    addToContent(s: string): void;
+    addToTagName(s: string): void;
+    setContent(s: string): void;
+    setTagName(s: string): void;
+    clearChildNode(): void;
+    get currAttrKey(): string;
+    get currAttrValue(): string;
+    addToAttrKey(char: string): void;
+    addToAttrValue(s: string): void;
+    setAttrKey(s: string): void;
+    setAttrValue(s: string): void;
+    addAttr(): void;
+    clearAttrKey(): void;
+    clearAttrValue(): void;
+    resetNodeType(): void;
+    get currQuoteUsedForAttrValue(): string;
+    setQuoteUsedForAttrValue(s: string): void;
+    clearQuoteUsedForAttrValue(): void;
+}
+//# sourceMappingURL=contextManager.d.ts.map
