@@ -287,12 +287,6 @@ export default class SaxaMLLParser {
                 this.contextManager.setNodeType("text");
                 this.contextManager.addToContent(c);
                 break;
-            case ParserState.OPEN:
-                this.stateManager.transition(ParserState.TEXT);
-                this.contextManager.setTagName("text");
-                this.contextManager.setNodeType("text");
-                this.contextManager.addToContent(c);
-                break;
             case ParserState.OPENTAG:
                 this.stateManager.transition(ParserState.TEXT);
                 this.contextManager.setTagName("text");
@@ -409,3 +403,478 @@ export default class SaxaMLLParser {
         }
     }
 }
+
+import { XMLNode } from "../types/index";
+import SaxaMLLExecutor from "./executor";
+
+export default class SaxaMLLParserContextManager {
+    _currChildNode: XMLNode = { tag: "", attributes: {}, children: [], content: "", type: "element" };
+    _currAttrKey: string = "";
+    _currAttrValue: string = "";
+    _currQuoteUsedForAttrValue: string = "";
+
+    public executor: SaxaMLLExecutor;
+
+    constructor(executor: SaxaMLLExecutor) {
+        this.executor = executor;
+    }
+
+    public setExecutor(executor: SaxaMLLExecutor) {
+        this.executor = executor;
+    }
+
+    public setNodeType(type: "text" | "element" | "error") {
+        this._currChildNode.type = type;
+    }
+
+    public clearContext() {
+        this.clearChildNode();
+        this.clearAttrKey();
+        this.clearAttrValue();
+    }
+
+    // Pre + Post
+    public get currPre() {
+        return this._currChildNode.pre;
+    }
+
+    public get currPost() {
+        return this._currChildNode.post;
+    }
+
+    public addToPre(s: string) {
+        if (!this._currChildNode.pre) this._currChildNode.pre = "";
+        this._currChildNode.pre += s;
+    }
+
+    public addToPost(s: string) {
+        if (!this._currChildNode.post) this._currChildNode.post = "";
+        this._currChildNode.post += s;
+    }
+
+    public setPre(s: string) {
+        this._currChildNode.pre = s;
+    }
+
+    public setPost(s: string) {
+        this._currChildNode.post = s;
+    }
+
+    public clearPre() {
+        this._currChildNode.pre = "";
+    }
+
+    public clearPost() {
+        this._currChildNode.post = "";
+    }
+
+    public clearRaw() {
+        this.clearPre();
+        this.clearPost();
+    }
+
+    // Child node
+    public get currChildNode() {
+        return this._currChildNode;
+    }
+    public isCurrChildEmpty() {
+        return this._currChildNode.tag === "" && this._currChildNode.content === "";
+    }
+    public addToContent(s: string) {
+        this._currChildNode.content += s;
+    }
+    public addToTagName(s: string) {
+        this._currChildNode.tag += s;
+    }
+    public setContent(s: string) {
+        this._currChildNode.content = s;
+    }
+    public setTagName(s: string) {
+        this._currChildNode.tag = s;
+    }
+    public clearChildNode() {
+        this._currChildNode = { tag: "", attributes: {}, children: [], content: "", type: "element" };
+    }
+
+    // Attributes
+    public get currAttrKey() {
+        return this._currAttrKey;
+    }
+
+    public get currAttrValue() {
+        return this._currAttrValue;
+    }
+
+    public addToAttrKey(char: string) {
+        this._currAttrKey += char;
+    }
+
+    public addToAttrValue(s: string) {
+        this._currAttrValue += s;
+    }
+
+    public setAttrKey(s: string) {
+        this._currAttrKey = s;
+    }
+
+    public setAttrValue(s: string) {
+        this._currAttrValue = s;
+    }
+
+    public addAttr() {
+        this._currChildNode.attributes[this._currAttrKey] = this._currAttrValue;
+        this.clearAttrKey();
+        this.clearAttrValue();
+    }
+
+    public clearAttrKey() {
+        this._currAttrKey = "";
+    }
+
+    public clearAttrValue() {
+        this._currAttrValue = "";
+    }
+
+    public resetNodeType() {
+        this._currChildNode.type = "element";
+    }
+
+    public get currQuoteUsedForAttrValue() {
+        return this._currQuoteUsedForAttrValue;
+    }
+
+    public setQuoteUsedForAttrValue(s: string) {
+        this._currQuoteUsedForAttrValue = s;
+    }
+
+    public clearQuoteUsedForAttrValue() {
+        this._currQuoteUsedForAttrValue = "";
+    }
+
+
+}
+
+import { ParserState } from "./state";
+import { XMLNode } from "../types/index";
+import SaxaMLLExecutor from "./executor";
+import SaxaMLLParserContextManager from "./contextManager";
+import { ParserError } from "./error";
+
+export default class SaxaMLLParserStateManager {
+    private _state: ParserState = ParserState.IDLE;
+    private _ast: XMLNode = { tag: "root", attributes: {}, children: [], type: "element" };
+    private _stack: { node: XMLNode; state: ParserState }[] = [{ node: this._ast, state: ParserState.IDLE }];
+
+    public executor: SaxaMLLExecutor;
+    contextManager: SaxaMLLParserContextManager;
+
+    public _error: ParserError | null = null;
+
+    constructor(contextManager: SaxaMLLParserContextManager, executor: SaxaMLLExecutor) {
+        this.executor = executor;
+        this.contextManager = contextManager;
+    }
+
+    public get ast() {
+        return this._ast;
+    }
+
+    public get stack() {
+        return this._stack;
+    }
+
+    public get state() {
+        return this._state;
+    }
+
+    public get error() {
+        return this._error;
+    }
+
+    public setError(error: ParserError) {
+        this.executor.emit("error", error);
+        this._error = error;
+    }
+
+    public transition(state: ParserState) {
+        this._state = state;
+    }
+
+    public enterScope() {
+        if (this.contextManager.isCurrChildEmpty()) return;
+
+        const node = this.contextManager.currChildNode;
+
+        this._addChild(node);
+        this._push(node);
+
+        // Emit an event that a opening tag has been parsed
+        const modifiedTagName = `tagOpen:${node.tag}`;
+        this.executor.emit(modifiedTagName, node);
+
+        // Empty out the collector
+        this.contextManager.clearChildNode();
+    }
+
+    public exitScope() {
+        const currentTopOfStack = this._peek();
+        const currentChildNode = this.contextManager.currChildNode;
+
+        if (currentTopOfStack.node.tag !== currentChildNode.tag) {
+            // Construct an error node
+            if (currentTopOfStack.node.tag !== "root") {
+                this.contextManager.setContent(`Expected closing tag for "${currentTopOfStack.node.tag}" but found "${currentChildNode.tag}"`);
+            } else {
+                this.contextManager.setContent(`Unexpected closing tag "${currentChildNode.tag}"`);
+            }
+
+            this.contextManager.setTagName("error");
+            this.contextManager.setNodeType("error");
+
+            // Commit the error node
+            this.commitChild();
+
+            // Transition to error state
+            this.transition(ParserState.ERROR);
+            this.setError(ParserError.BAD_CLOSE_TAG);
+
+            // TODO: emit an error message
+            return;
+        }
+
+        // Add the post content to the current top of stack
+        currentTopOfStack.node.post = currentChildNode.post;
+
+        const popped = this._pop();
+        const topOfStack = this._peek();
+        const modifiedTagName = `tagClose:${popped.node.tag}`;
+        this.executor.emit(modifiedTagName, popped.node);
+
+        this.contextManager.clearChildNode();
+        this.transition(topOfStack.state);
+    }
+
+    public tagClosed() {
+        const currentTopOfStack = this._peek();
+        const currentChildNode = this.contextManager.currChildNode;
+
+        if (currentTopOfStack.node.tag !== currentChildNode.tag) {
+            this.commitChild();
+            this.transition(currentTopOfStack.state);
+            return;
+        }
+
+        const popped = this._pop();
+        const topOfStack = this._peek();
+        const modifiedTagName = `tagClose:${popped.node.tag}`;
+        this.executor.emit(modifiedTagName, popped.node);
+
+        this.contextManager.clearChildNode();
+        this.transition(topOfStack.state);
+    }
+
+    public commitChild() {
+        if (this.contextManager.isCurrChildEmpty()) return;
+
+        const node = this.contextManager.currChildNode;
+
+        // Add and clear
+        this._addChild(node);
+        this.contextManager.clearChildNode();
+    }
+
+    public flushAll() {
+        // Push the last child node
+        this.commitChild();
+
+        // Pop until the stack is empty
+        while (this._stack.length > 1) {
+            this.exitScope();
+        }
+    }
+
+    public flush() {
+        // FIX:
+        // I only really want to flush if it's a text node
+        // main reason being that if it's in the middle of parsing an element node,
+        // then the tree representation gets fucked up
+        // I could implement diffs, but it's annoying... but I probably should.
+        const node = this.contextManager.currChildNode;
+        if (node.type === "text") {
+            // commit the current child
+            this.commitChild();
+        }
+        const top = this._peek().node;
+        this.executor.emit("update", top);
+        this.executor.emit(`update:${top.tag}`, top);
+    }
+
+    private _addChild(child: XMLNode) {
+        this._stack[this._stack.length - 1].node.children.push(child);
+    }
+    private _push(node: XMLNode) {
+        this._stack.push({ node, state: this._state });
+    }
+    private _pop() {
+        return this._stack.pop();
+    }
+
+    private _peek() {
+        return this._stack[this._stack.length - 1];
+    }
+}
+
+import { XMLNode } from "../types/index";
+import XMLNodeDescription from "../node/index";
+import EventEmitter from "../../node_modules/eventemitter3/index";
+
+type SaxaMLLEventType = "tagOpen" | "tagClose" | "update";
+type SaxaMLLEventCallback = (node: XMLNode) => any;
+
+class ExecutionHandlerBuilder {
+    public executor: SaxaMLLExecutor;
+    public eventType: SaxaMLLEventType;
+    public tag?: XMLNodeDescription | string;
+    public scope: string[] = [];
+
+    constructor(executor: SaxaMLLExecutor, eventType: SaxaMLLEventType) {
+        this.executor = executor;
+        this.eventType = eventType;
+    }
+
+    public for(tag: XMLNodeDescription | string): ExecutionHandlerBuilderWithFor {
+        this.tag = tag;
+        return new ExecutionHandlerBuilderWithFor(this);
+    }
+
+    public do(callback: SaxaMLLEventCallback) {
+        this.executor.addHandler(this.eventType, "", callback);
+    }
+
+    public getEventName(): string {
+        return this.executor.buildEventName(this.eventType, this.tag!);
+    }
+}
+
+class ExecutionHandlerBuilderWithFor {
+    private builder: ExecutionHandlerBuilder;
+
+    constructor(builder: ExecutionHandlerBuilder) {
+        this.builder = builder;
+    }
+
+    public do(callback: SaxaMLLEventCallback) {
+        this.builder.executor.addHandler(this.builder.eventType, this.builder.tag!, callback);
+
+        return this;
+    }
+
+    public getEventName(): string {
+        return this.builder.getEventName();
+    }
+}
+
+
+
+export default class SaxaMLLExecutor extends EventEmitter {
+    constructor() {
+        super();
+    }
+
+    public buildEventName(event: SaxaMLLEventType, tag: XMLNodeDescription | string): string {
+        const modifiedTag = tag instanceof XMLNodeDescription ? tag.tag : tag;
+        if (modifiedTag.length === 0) return event;
+
+        return `${event}:${modifiedTag}`;
+    }
+
+
+    public upon(event: SaxaMLLEventType) {
+        return new ExecutionHandlerBuilder(this, event);
+    }
+
+
+    public addHandler(event: SaxaMLLEventType, tag: XMLNodeDescription | string, callback: SaxaMLLEventCallback) {
+        const eventName = this.buildEventName(event, tag);
+
+        super.on(eventName, callback);
+    }
+}
+
+export { ExecutionHandlerBuilder };
+
+
+export const enum ParserState {
+    IDLE = 0,
+    // Inside a scope
+    OPEN = 1,
+    // `<` has been encountered and potentially inside of a tag
+    OPENTAG = 2,
+
+    CLOSETAG = 3,
+    CLOSETAGLONE = 4,
+    TAGNAME = 5,
+    ATTRKEY = 6,
+    ATTRVALUEREADY = 7,
+    ATTRVALUE = 8,
+    TEXT = 9,
+    ERROR = 10
+}
+
+export const enum ParserError {
+    UNEXPECTED_TOKEN = "Unexpected token",
+    BAD_CLOSE_TAG = "Bad close tag; expected closing tag for a different tag",
+}
+
+import { XMLNode } from "./types/index";
+
+function getText(node: XMLNode): string {
+    if (node.type === "text") {
+        return node.content!;
+    }
+
+    if (node.children === undefined) {
+        return "";
+    }
+
+    let textCollector: string = "";
+    for (const child of node.children) {
+        textCollector += getText(child);
+    }
+
+    return textCollector;
+}
+
+function getRaw(node: XMLNode): string {
+    if (node.type === "text") {
+        return getRawTextConstructor(node);
+    }
+
+
+    let textCollector: string = "";
+    const pre = node.pre ? node.pre : "";
+    const post = node.post ? node.post : "";
+
+    if (node.children === undefined) {
+        return pre + post;
+    }
+
+    for (const child of node.children) {
+        textCollector += getRaw(child);
+    }
+
+    return pre + textCollector + post;
+
+}
+
+function getRawTextConstructor(node: XMLNode): string {
+    const pre = node.pre ? node.pre : "";
+    const post = node.post ? node.post : "";
+    const content = node.content ? node.content : "";
+
+
+
+    return pre + content + post;
+}
+
+export { getText, getRaw };

@@ -102,19 +102,11 @@ export default class SaxaMLLParserStateManager {
         const currentTopOfStack = this._peek();
         const currentChildNode = this.contextManager.currChildNode;
 
+        // for self closing tags
         if (currentTopOfStack.node.tag !== currentChildNode.tag) {
             this.commitChild();
             this.transition(currentTopOfStack.state);
-            return;
         }
-
-        const popped = this._pop();
-        const topOfStack = this._peek();
-        const modifiedTagName = `tagClose:${popped.node.tag}`;
-        this.executor.emit(modifiedTagName, popped.node);
-
-        this.contextManager.clearChildNode();
-        this.transition(topOfStack.state);
     }
 
     public commitChild() {
@@ -124,6 +116,12 @@ export default class SaxaMLLParserStateManager {
 
         // Add and clear
         this._addChild(node);
+
+        // Emit event
+        const top = this._peek().node;
+        this.executor.emit("update", [top, node, true]);
+        this.executor.emit(`update:${top.tag}`, [top, node, true]);
+
         this.contextManager.clearChildNode();
     }
 
@@ -144,13 +142,16 @@ export default class SaxaMLLParserStateManager {
         // then the tree representation gets fucked up
         // I could implement diffs, but it's annoying... but I probably should.
         const node = this.contextManager.currChildNode;
+
         if (node.type === "text") {
             // commit the current child
             this.commitChild();
+            return;
         }
+
         const top = this._peek().node;
-        this.executor.emit("update", top);
-        this.executor.emit(`update:${top.tag}`, top);
+        this.executor.emit("update", [top, node, false]);
+        this.executor.emit(`update:${top.tag}`, [top, node, false]);
     }
 
     private _addChild(child: XMLNode) {

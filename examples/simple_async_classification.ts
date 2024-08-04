@@ -33,7 +33,6 @@ export const simple_async_classification = async () => {
      */
     const classificationPrompt = classificationTag.prompt;
 
-
     // On the parser side
     const saxParser = new SaxaMLLParser();
 
@@ -57,7 +56,10 @@ export const simple_async_classification = async () => {
     saxParser.parse("<classification>positive</classification>");
     saxParser.end();
 
-    await Promise.all(promises);
+    // if (promises.length === 0) {
+    //     return response;
+    // }
 
+    await Promise.all(promises);
     return response;
 }

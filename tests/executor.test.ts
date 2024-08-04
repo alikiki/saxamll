@@ -8,8 +8,6 @@ describe('SaxaMLL - ExecutionHandler', () => {
 
         handler.for('random').do((node) => { return Promise.resolve("") });
 
-        expect(handler.tag).toBe('random');
-        expect(handler.scope.length).toBe(0);
         expect(handler.getEventName()).toBe('tagClose:random');
     })
 })

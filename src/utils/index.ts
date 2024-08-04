@@ -1,4 +1,4 @@
-import { XMLNode } from "./types/index";
+import { XMLNode } from "../types/index";
 
 function getText(node: XMLNode): string {
     if (node.type === "text") {
@@ -22,9 +22,14 @@ function getRaw(node: XMLNode): string {
         return getRawTextConstructor(node);
     }
 
+
     let textCollector: string = "";
     const pre = node.pre ? node.pre : "";
     const post = node.post ? node.post : "";
+
+    if (node.children === undefined) {
+        return pre + post;
+    }
 
     for (const child of node.children) {
         textCollector += getRaw(child);

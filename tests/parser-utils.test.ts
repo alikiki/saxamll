@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { getText, getRaw, SaxaMLLParser } from '../src';
+import { XMLNode } from '../src/types';
 
 describe('SaxaMLL - Utils', () => {
     it('gets text from a text node', () => {
@@ -9,7 +10,7 @@ describe('SaxaMLL - Utils', () => {
             children: [],
             content: "Hello",
             type: "text"
-        }
+        } as XMLNode
 
         const text = getText(ast);
         expect(text).toEqual("Hello");
@@ -36,7 +37,7 @@ describe('SaxaMLL - Utils', () => {
                 }
             ],
             type: "element"
-        }
+        } as XMLNode
 
         const text = getText(ast);
         expect(text).toEqual("Hello ");
@@ -77,7 +78,7 @@ describe('SaxaMLL - Utils', () => {
                 }
             ],
             type: "element"
-        }
+        } as XMLNode
 
         const text = getText(ast);
         expect(text).toEqual("Hello...What is life?");
