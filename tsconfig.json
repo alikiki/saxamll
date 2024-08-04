@@ -13,6 +13,7 @@
 
     /* Modules */
     "module": "esnext",
+    "moduleResolution": "node",
     "baseUrl": "./",                                  /* Specify the base directory to resolve non-relative module names. */
     "paths": {
       "saxamll": ["src/index.ts", "dist/index.js"]

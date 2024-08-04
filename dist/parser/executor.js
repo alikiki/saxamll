@@ -1,5 +1,5 @@
 import XMLNodeDescription from "../node/index";
-import EventEmitter from "../../node_modules/eventemitter3/index";
+import EventEmitter from "eventemitter3";
 class ExecutionHandlerBuilder {
     constructor(executor, eventType, tag = "") {
         this.executor = executor;

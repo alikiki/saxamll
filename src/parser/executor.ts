@@ -1,6 +1,6 @@
 import { XMLNode } from "../types/index";
 import XMLNodeDescription from "../node/index";
-import EventEmitter from "../../node_modules/eventemitter3/index";
+import EventEmitter from "eventemitter3";
 
 type SaxaMLLTagEventType = "tagOpen" | "tagClose";
 type SaxaMLLUpdateEventType = "update";

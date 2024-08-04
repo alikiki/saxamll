@@ -6,10 +6,10 @@ export default class SaxaMLLParser {
     executor: SaxaMLLExecutor;
     private contextManager;
     private stateManager;
-    get ast(): import("../types/index").XMLNode;
+    get ast(): import("../types").XMLNode;
     get state(): ParserState;
     get stack(): {
-        node: import("../types/index").XMLNode;
+        node: import("../types").XMLNode;
         state: ParserState;
     }[];
     parse(input: string): void;
